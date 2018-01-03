@@ -2,7 +2,7 @@
 
 Work in progress...
 
-```bash
+```
 > git revision
 Welcome to git revision! This tool helps to generate useful version numbers and
 revision codes for your project. Semantic versioning (i.e. "1.4.2") is nice but
