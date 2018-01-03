@@ -19,6 +19,7 @@ class CliApp {
     ..addOption('baseBranch',
         defaultsTo: 'master', help: 'The branch you work on most of the time')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Help!')
+    ..addCommand('help')
     ..addFlag('version', abbr: 'v', help: 'Shows version information')
     ..addOption('format', defaultsTo: 'revision', allowed: ['revision', 'todo'])
     ..addFlag('test');
@@ -57,9 +58,12 @@ Version name: $name
       return null;
     }
 
-    if (options['help'] == true) {
+    if (options['help'] == true || options.command?.name == 'help') {
       logger.stdOut('''
-Welcome to git revision! This tool helps to generate useful version numbers and revision codes for your project. Semantic versioning (i.e. "1.4.2") is nice but only useful for endusers. Wouldn't it be nice if each commit had a unique revision which is meaningful and comparable?
+Welcome to git revision! This tool helps to generate useful version numbers and
+revision codes for your project. Semantic versioning (i.e. "1.4.2") is nice but 
+only useful for endusers. Wouldn't it be nice if each commit had a unique 
+revision which is meaningful and comparable?
       ''');
 
       logger.stdOut(_argParser.usage);

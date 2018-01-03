@@ -36,6 +36,21 @@ void main() {
     });
   });
 
+  group('help', () {
+    test('has exact same output as --help', () async {
+      MockLogger logger1 = new MockLogger();
+      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      await app1.process(['--help']);
+
+      MockLogger logger2 = new MockLogger();
+      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      await app2.process(['help']);
+
+      expect(logger1.messages, equals(logger2.messages));
+      expect(logger1.errors, equals(logger2.errors));
+    });
+  });
+
   group('--version', () {
     MockLogger logger;
     CliApp app;
