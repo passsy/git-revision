@@ -18,15 +18,14 @@ void main() {
     });
 
     test('shows intro text', () async {
-      expect(logger.messages.length, 2);
-      var helpMessage = logger.messages[0];
-      expect(helpMessage, startsWith('Welcome to git revision'));
+      expect(logger.messages.join(), startsWith('Welcome to git revision'));
     });
 
     test('shows usage information', () async {
-      var usageMessage = logger.messages[1];
-      expect(usageMessage, contains('baseBranch'));
-      expect(usageMessage, contains('format'));
+      var usageMessage = logger.messages.join();
+      expect(usageMessage, contains('--help'));
+      expect(usageMessage, contains('--version'));
+      expect(usageMessage, contains('init'));
     });
 
     test('all fields are filled', () async {
@@ -77,6 +76,22 @@ void main() {
     });
   });
 
+
+  group('version', () {
+    test('has exact same output as --version', () async {
+      MockLogger logger1 = new MockLogger();
+      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      await app1.process(['--version']);
+
+      MockLogger logger2 = new MockLogger();
+      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      await app2.process(['version']);
+
+      expect(logger1.messages, equals(logger2.messages));
+      expect(logger1.errors, equals(logger2.errors));
+    });
+  });
+
   group('default - empty args', () {
     MockLogger logger;
     CliApp app;
@@ -114,6 +129,10 @@ void main() {
         expect(e.toString(), contains('gitVersioner'));
       }
     });
+  });
+
+  group('init', (){
+    //TODO
   });
 
   group('construct app', () {

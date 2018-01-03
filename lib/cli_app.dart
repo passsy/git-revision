@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io' as io;
-import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:git_revision/git_revision.dart';
@@ -15,31 +14,32 @@ class CliApp {
       : gitVersioner = new GitVersioner(),
         logger = new CliLogger();
 
-  final ArgParser _argParser = new ArgParser(allowTrailingOptions: true)
+  static ArgParser _initParser = new ArgParser(allowTrailingOptions: true)
+    ..addOption('format',
+        abbr: 'f',
+        help: 'format options',
+        defaultsTo: 'revision',
+        allowed: ['revision', 'more will come...'])
+    ..addFlag('help', abbr: 'h', negatable: false)
     ..addOption('baseBranch',
-        defaultsTo: 'master', help: 'The branch you work on most of the time')
-    ..addFlag('help', abbr: 'h', negatable: false, help: 'Help!')
+        abbr: 'b',
+        defaultsTo: 'master',
+        help: 'The branch you work on most of the time');
+
+  static ArgParser _argParser = new ArgParser(allowTrailingOptions: true)
+    ..addFlag('version',
+        abbr: 'v', negatable: false, help: 'Shows the version information')
+    ..addCommand('version')
+    ..addFlag('help',
+        abbr: 'h',
+        negatable: false,
+        help:
+            "Shows a help message for a given command 'git revision init --help'")
     ..addCommand('help')
-    ..addFlag('version', abbr: 'v', help: 'Shows version information')
-    ..addOption('format', defaultsTo: 'revision', allowed: ['revision (default)', 'more will come...'])
-    ..addFlag('test', negatable: false, help: 'TODO: remove'); // TODO remove
+    ..addCommand('init', _initParser);
 
   Future process(List<String> args) async {
-    var argParser = _argParser;
-
-    ArgResults options;
-
-    try {
-      options = argParser.parse(args);
-    } catch (e, st) {
-      // FormatException: Could not find an option named "foo".
-      if (e is FormatException) {
-        logger.stdOut('Error: ${e.message}');
-        return new Future.error(new ArgError(e.message));
-      } else {
-        return new Future.error(e, st);
-      }
-    }
+    final ArgResults options = _argParser.parse(args);
 
     if (args.isEmpty) {
       assert(() {
@@ -64,23 +64,46 @@ Welcome to git revision! This tool helps to generate useful version numbers and
 revision codes for your project. Semantic versioning (i.e. "1.4.2") is nice but 
 only useful for end users. Wouldn't it be nice if each commit had a unique 
 revision which is meaningful and comparable?
+
+Usage:
       ''');
 
       logger.stdOut(_argParser.usage);
+
+      logger.stdOut('''
+
+Commands:
+
+init\tCreates a configuration file (.gitrevision.yaml)
+help\tShows this help text
+      ''');
       return null;
     }
 
-    if (options['test'] == true) {
-      logger.stdOut('Result: ${Directory.current.path}');
-      return null;
-    }
-
-    if (options['version']) {
+    if (options['version'] || options.command?.name == 'version') {
       logger.stdOut('Version 0.4.0');
       return null;
     }
 
-    return null;
+    if (options.command?.name == 'init') {
+      final ArgResults initOptions = _initParser.parse(args);
+      if (initOptions['help'] == true) {
+        logger.stdOut('''
+Creates a configuration file `.gitrevision.yaml` to add a fixed config to this project
+        
+Usage: git revision init [--baseBranch] [--format] [--help] 
+        ''');
+        logger.stdOut(_initParser.usage);
+        return null;
+      }
+
+      logger.stdOut('not implemented');
+      return null;
+    }
+
+    logger.stdErr(
+        "unrecognized arguments '${args.join()}', try 'git revision help'");
+    throw new ArgError('unrecognized command');
   }
 }
 
