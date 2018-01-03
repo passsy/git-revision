@@ -77,7 +77,7 @@ void main() {
     });
   });
 
-  group('empty arguments', () {
+  group('default - empty args', () {
     MockLogger logger;
     CliApp app;
     GitVersioner versioner;
@@ -86,7 +86,8 @@ void main() {
       logger = new MockLogger();
       versioner = new MockGitVersioner();
       when(versioner.revision()).thenReturn(new Future.value('432'));
-      when(versioner.versionName()).thenReturn(new Future.value('432-SNAPSHOT'));
+      when(versioner.versionName())
+          .thenReturn(new Future.value('432-SNAPSHOT'));
 
       app = new CliApp(versioner, logger);
       await app.process([]);
