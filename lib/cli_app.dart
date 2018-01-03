@@ -22,7 +22,7 @@ class CliApp {
     ..addCommand('help')
     ..addFlag('version', abbr: 'v', help: 'Shows version information')
     ..addOption('format', defaultsTo: 'revision', allowed: ['revision', 'todo'])
-    ..addFlag('test');
+    ..addFlag('test', negatable: false); // TODO remove
 
   Future process(List<String> args) async {
     var argParser = _argParser;
