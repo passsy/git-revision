@@ -104,6 +104,25 @@ void main() {
       expect(logger.messages, hasLength(1));
       expect(logger.messages[0], isNot(contains('null')));
     });
+
+    test('requires gitVersioner', () async {
+      app = new CliApp(null, new MockLogger());
+      try {
+        await app.process([]);
+      } on ArgumentError catch (e) {
+        expect(e.toString(), contains('gitVersioner'));
+      }
+    });
+  });
+
+  group('construct app', () {
+    test("logger can't be null", () {
+      try {
+        new CliApp(null, null);
+      } on AssertionError catch (e) {
+        expect(e.toString(), contains('logger != null'));
+      }
+    });
   });
 }
 
