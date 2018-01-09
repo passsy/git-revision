@@ -1,9 +1,17 @@
 import 'dart:async';
 
+import 'package:git_revision/git/git_commands.dart';
+
 class GitVersioner {
-  Future<int> revision() async => 0;
+  final GitCommands gitCommands;
 
-  Future<String> versionName() async => '0.0.0';
+  GitVersioner(this.gitCommands);
 
-  Future<String> branchName() async => 'master';
+  Future<int> get revision async => 0;
+
+  Future<String> get versionName async => '0.0.0';
+
+  Future<Revision> get branchName async => gitCommands.currentBranch;
+
+  Future<Sha1> get sha1 async => gitCommands.currentSha1;
 }

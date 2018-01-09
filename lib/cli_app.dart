@@ -1,112 +1,104 @@
 import 'dart:async';
 import 'dart:io' as io;
 
-import 'package:args/args.dart';
+import 'package:git_revision/cli/commander.dart';
+import 'package:git_revision/git/shell_git_extractor.dart';
 import 'package:git_revision/git_revision.dart';
 
-class CliApp {
-  final CliLogger logger;
+class InitCommand extends Command {
+  final String name = 'init';
+  final String description =
+      'Creates a configuration file `.gitrevision.yaml` to add a fixed config to this project';
+
+  InitCommand() {
+    argParser
+      ..addOption('format',
+          abbr: 'f',
+          help: 'format options',
+          defaultsTo: 'revision',
+          allowed: ['revision', 'more will come...'])
+      ..addOption('baseBranch',
+          abbr: 'b',
+          defaultsTo: 'master',
+          help: 'The branch you work on most of the time');
+  }
+
+  @override
+  Null run() {
+    if (argResults['format'] == null) {
+      throw new ArgError('require format arg');
+    }
+    return null;
+  }
+}
+
+class RevisionCommand extends Command {
+  final String name = 'revision';
+  final String description = '//TODO';
+
   final GitVersioner gitVersioner;
 
-  CliApp(this.gitVersioner, this.logger) : assert(logger != null);
+  RevisionCommand(this.gitVersioner);
 
-  CliApp.production()
-      : gitVersioner = new GitVersioner(),
-        logger = new CliLogger();
-
-  static ArgParser _initParser = new ArgParser(allowTrailingOptions: true)
-    ..addOption('format',
-        abbr: 'f',
-        help: 'format options',
-        defaultsTo: 'revision',
-        allowed: ['revision', 'more will come...'])
-    ..addFlag('help', abbr: 'h', negatable: false)
-    ..addOption('baseBranch',
-        abbr: 'b',
-        defaultsTo: 'master',
-        help: 'The branch you work on most of the time');
-
-  static ArgParser _argParser = new ArgParser(allowTrailingOptions: true)
-    ..addFlag('version',
-        abbr: 'v', negatable: false, help: 'Shows the version information')
-    ..addCommand('version')
-    ..addFlag('help',
-        abbr: 'h',
-        negatable: false,
-        help:
-            "Shows a help message for a given command 'git revision init --help'")
-    ..addCommand('help')
-    ..addCommand('init', _initParser);
-
-  Future process(List<String> args) async {
-    final ArgResults options = _argParser.parse(args);
-
-    if (args.isEmpty) {
+  @override
+  Future run() async {
+    if (argResults.arguments.isEmpty) {
       assert(() {
         if (gitVersioner == null)
           throw new ArgumentError.notNull('gitVersioner');
         return true;
       }());
 
-      var revision = await gitVersioner.revision();
-      var name = await gitVersioner.versionName();
+      var revision = await gitVersioner.revision;
+      var name = await gitVersioner.versionName;
 
       logger.stdOut('''
 Revision: $revision
 Version name: $name
+sha1: ${await gitVersioner.sha1}
+branch: ${await gitVersioner.branchName}
       ''');
-      return null;
     }
 
-    if (options['help'] == true || options.command?.name == 'help') {
-      logger.stdOut('''
-Welcome to git revision! This tool helps to generate useful version numbers and
-revision codes for your project. Semantic versioning (i.e. "1.4.2") is nice but 
-only useful for end users. Wouldn't it be nice if each commit had a unique 
-revision which is meaningful and comparable?
-
-Usage:
-      ''');
-
-      logger.stdOut(_argParser.usage);
-
-      logger.stdOut('''
-
-Commands:
-
-init\tCreates a configuration file (.gitrevision.yaml)
-help\tShows this help text
-      ''');
-      return null;
-    }
-
-    if (options['version'] || options.command?.name == 'version') {
-      logger.stdOut('Version 0.4.0');
-      return null;
-    }
-
-    if (options.command?.name == 'init') {
-      final ArgResults initOptions = _initParser.parse(args);
-      if (initOptions['help'] == true) {
-        logger.stdOut('''
-Creates a configuration file `.gitrevision.yaml` to add a fixed config to this project
-        
-Usage: git revision init [--baseBranch] [--format] [--help] 
-        ''');
-        logger.stdOut(_initParser.usage);
-        return null;
-      }
-
-      logger.stdOut('not implemented');
-      return null;
-    }
-
-    logger.stdErr(
-        "unrecognized arguments '${args.join()}', try 'git revision help'");
-    throw new ArgError('unrecognized command');
+    return null;
   }
 }
 
+class VersionCommand extends Command {
+  final String name = 'version';
+  final String description = 'Shows the version information';
+
+  VersionCommand();
+
+  @override
+  void run() {
+    //TODO
+    logger.stdOut('Version 0.1.0');
+  }
+}
+
+class CliApp {
+  final GitVersioner gitVersioner;
+  Commander runner;
+  final CliLogger logger;
+
+  CliApp(this.gitVersioner, this.logger) : assert(logger != null) {
+    runner = new Commander('git revision', 'Welcome to git revision!')
+      ..logger = logger
+      //..addCommand(new InitCommand())
+      ..addCommand(new VersionCommand())
+      ..addCommand(new RevisionCommand(gitVersioner));
+  }
+
+  CliApp.production()
+      : this(new GitVersioner(new ShellGitExtractor()), new CliLogger());
+
+  Future process(List<String> args) async {
+    return await runner.run(args);
+  }
+}
+
+// TODO move out of implementation
 class CliLogger {
   void stdOut(String s) => io.stdout.writeln(s);
 

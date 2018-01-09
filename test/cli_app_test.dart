@@ -7,14 +7,14 @@ import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('--help', () {
+  group('help', () {
     MockLogger logger;
     CliApp app;
 
     setUp(() async {
       logger = new MockLogger();
       app = new CliApp(null /*not required for tests*/, logger);
-      await app.process(['--help']);
+      await app.process(['help']);
     });
 
     test('shows intro text', () async {
@@ -25,7 +25,8 @@ void main() {
       var usageMessage = logger.messages.join();
       expect(usageMessage, contains('--help'));
       expect(usageMessage, contains('--version'));
-      expect(usageMessage, contains('init'));
+      // TODO not implemented yet
+      //expect(usageMessage, contains('init'));
     });
 
     test('all fields are filled', () async {
@@ -35,29 +36,44 @@ void main() {
     });
   });
 
-  group('help', () {
-    test('has exact same output as --help', () async {
+  group('empty arguments', () {
+    test('has exact same output as help', () async {
       MockLogger logger1 = new MockLogger();
       CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
-      await app1.process(['--help']);
+      await app1.process(['help']);
 
       MockLogger logger2 = new MockLogger();
       CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
-      await app2.process(['help']);
+      await app2.process([]);
 
       expect(logger1.messages, equals(logger2.messages));
       expect(logger1.errors, equals(logger2.errors));
     });
   });
 
-  group('--version', () {
+  group('--help', () {
+    test('has exact same output as help', () async {
+      MockLogger logger1 = new MockLogger();
+      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      await app1.process(['help']);
+
+      MockLogger logger2 = new MockLogger();
+      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      await app2.process(['--help']);
+
+      expect(logger1.messages, equals(logger2.messages));
+      expect(logger1.errors, equals(logger2.errors));
+    });
+  });
+
+  group('version', () {
     MockLogger logger;
     CliApp app;
 
     setUp(() async {
       logger = new MockLogger();
       app = new CliApp(null /*not required for tests*/, logger);
-      await app.process(['--version']);
+      await app.process(['version']);
     });
 
     test('shows version number', () async {
@@ -76,49 +92,69 @@ void main() {
     });
   });
 
-
-  group('version', () {
-    test('has exact same output as --version', () async {
+  group('--version', () {
+    test('has exact same output as version', () async {
       MockLogger logger1 = new MockLogger();
       CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
-      await app1.process(['--version']);
+      await app1.process(['version']);
 
       MockLogger logger2 = new MockLogger();
       CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
-      await app2.process(['version']);
+      await app2.process(['--version']);
+
+      expect(logger1.messages, equals(logger2.messages));
+      expect(logger1.errors, equals(logger2.errors));
+    });
+
+    test('with known command --version shows command output', () async {
+      MockLogger logger1 = new MockLogger();
+      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      await app1.process(['help']);
+
+      MockLogger logger2 = new MockLogger();
+      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      await app2.process(['help', '--version']);
 
       expect(logger1.messages, equals(logger2.messages));
       expect(logger1.errors, equals(logger2.errors));
     });
   });
 
-  group('default - empty args', () {
+  group('revision', () {
     MockLogger logger;
     CliApp app;
     GitVersioner versioner;
+    String log;
 
     setUp(() async {
       logger = new MockLogger();
       versioner = new MockGitVersioner();
-      when(versioner.revision()).thenReturn(new Future.value('432'));
-      when(versioner.versionName())
-          .thenReturn(new Future.value('432-SNAPSHOT'));
+      when(versioner.revision).thenReturn(new Future.value('432'));
+      when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
+      when(versioner.branchName).thenReturn(new Future.value('myBranch'));
+      when(versioner.sha1).thenReturn(new Future.value('1234567'));
 
       app = new CliApp(versioner, logger);
-      await app.process([]);
+      await app.process(['revision']);
+      log = logger.messages.join('\n');
     });
 
     test('shows revision', () async {
-      expect(logger.messages[0], contains('Revision: 432'));
+      expect(log, contains('Revision: 432'));
     });
 
     test('shows version name', () async {
-      expect(logger.messages[0], contains('Version name: 432-SNAPSHOT'));
+      expect(log, contains('Version name: 432-SNAPSHOT'));
+    });
+    test('shows branch', () async {
+      expect(log, contains('myBranch'));
+    });
+    test('shows sha1', () async {
+      expect(log, contains('1234567'));
     });
 
     test('all fields are filled', () async {
-      expect(logger.messages, hasLength(1));
-      expect(logger.messages[0], isNot(contains('null')));
+      expect(log, isNot(contains('null')));
     });
 
     test('requires gitVersioner', () async {
@@ -131,7 +167,7 @@ void main() {
     });
   });
 
-  group('init', (){
+  group('init', () {
     //TODO
   });
 
