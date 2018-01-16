@@ -4,26 +4,6 @@ import 'dart:io' as io;
 import 'package:git_revision/cli/commander.dart';
 import 'package:git_revision/git_revision.dart';
 
-class InitCommand extends Command {
-  final String name = 'init';
-  final String description = 'Creates a configuration file `.gitrevision.yaml` to add a fixed config to this project';
-
-  InitCommand() {
-    argParser
-      ..addOption('format',
-          abbr: 'f', help: 'format options', defaultsTo: 'revision', allowed: ['revision', 'more will come...'])
-      ..addOption('baseBranch', abbr: 'b', defaultsTo: 'master', help: 'The branch you work on most of the time');
-  }
-
-  @override
-  Null run() {
-    if (argResults['format'] == null) {
-      throw new ArgError('require format arg');
-    }
-    return null;
-  }
-}
-
 class RevisionCommand extends Command {
   final String name = 'revision';
   final String description = '//TODO';
@@ -84,7 +64,6 @@ class CliApp {
   CliApp(this.logger) : assert(logger != null) {
     runner = new Commander('git revision', 'Welcome to git revision!')
       ..logger = logger
-      //..addCommand(new InitCommand())
       ..addCommand(new VersionCommand())
       ..addCommand(new RevisionCommand(this));
   }
