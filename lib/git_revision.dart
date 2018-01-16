@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:git_revision/git/git_commands.dart';
+import 'package:git_revision/util/process_utils.dart';
 
 class GitVersionerConfig {
   String baseBranch;
@@ -11,10 +12,9 @@ class GitVersionerConfig {
 }
 
 class GitVersioner {
-  final GitCommands gitCommands;
   final GitVersionerConfig config;
 
-  GitVersioner(this.gitCommands, this.config);
+  GitVersioner(this.config);
 
   Future<int> _revision;
 
@@ -40,8 +40,8 @@ class GitVersioner {
           var diff = next.date.difference(prev.date);
           if (diff.inDays.abs() >= 2) {
             print("large gap (${diff.inDays.abs()}d) at ${prev.date
-            .toUtc()
-            .weekday} between ${next.sha1} and ${prev.sha1}");
+                .toUtc()
+                .weekday} between ${next.sha1} and ${prev.sha1}");
           }
         }
 
@@ -53,20 +53,36 @@ class GitVersioner {
 
   Future<String> get versionName => revision.then((count) => "$count");
 
-  Future<Revision> get branchName async => gitCommands.currentBranch;
+  Future<String> _currentBranch;
 
-  Future<Sha1> get sha1 async => gitCommands.currentSha1;
-}
+  Future<String> get branchName async => _currentBranch ??= () async {
+        await _verifyGitWorking();
+        var name = stdoutText(await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD'])).trim();
 
-class Commit {
-  String sha1;
-  DateTime date;
+        assert(() {
+          if (name.split('\n').length != 1) throw new ArgumentError("branch name is multiline '$name'");
+          return true;
+        }());
+        // empty branch names can't exits this means no branch name
+        if (name.isEmpty) return null;
+        return name;
+      }();
 
-  Commit(this.sha1, this.date);
+  Future<String> _sha1;
 
-  @override
-  String toString() {
-    return 'Commit{sha1: ${sha1.substring(0, 7)}, date: ${date
-      .millisecondsSinceEpoch}';
-  }
+  Future<String> get sha1 async => _sha1 ??= () async {
+        await _verifyGitWorking();
+        var hash = stdoutText(await Process.run('git', ['rev-parse', 'HEAD'])).trim();
+
+        assert(() {
+          if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
+          if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
+          return true;
+        }());
+
+        return hash;
+      }();
+
+  /// `null` when ready, errors otherwise
+  Future<Null> _verifyGitWorking() async => null;
 }

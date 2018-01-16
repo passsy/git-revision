@@ -98,7 +98,7 @@ class TempDir {
     assert(script != null);
     assert(script.isNotEmpty);
     var namePostfix = name != null ? "_$name".replaceAll(" ", "_") : "";
-    var scriptName = "script${_scriptCount++}${namePostfix}.sh";
+    var scriptName = "script${_scriptCount++}$namePostfix.sh";
     var path = "${root.path}$_slash$scriptName";
     var scriptFile = await new io.File(path).create();
     var scriptText = sh("""
@@ -110,12 +110,12 @@ class TempDir {
 
     // execute script
     var permission = await io.Process.run('chmod', ['+x', scriptName], workingDirectory: root.path);
-    handleResult(permission);
+    throwOnError(permission);
 
     print("\nrunning '$scriptName':");
     printOnFailure("\n$scriptText\n\n");
     var scriptResult = await io.Process.run('../$scriptName', [], workingDirectory: repo.path, runInShell: true);
-    handleResult(scriptResult);
+    throwOnError(scriptResult);
   }
 }
 
@@ -134,7 +134,7 @@ String write(String filename, String text) => sh("""echo "$text" > $filename""")
 /// trims the script
 String sh(String script) => script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
 
-void handleResult(io.ProcessResult processResult) {
+void throwOnError(io.ProcessResult processResult) {
   printOnFailure(processResult.stdout);
   if (processResult.exitCode != 0) {
     io.stderr.write("Exit code: ${processResult.exitCode}");

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:git_revision/cli/commander.dart';
-import 'package:git_revision/git/shell_git_extractor.dart';
 import 'package:git_revision/git_revision.dart';
 
 class InitCommand extends Command {
@@ -79,7 +78,7 @@ class CliApp {
   Commander runner;
   final CliLogger logger;
   VersionerProvider versionerProvider = (config) {
-    return new GitVersioner(new ShellGitExtractor(), config);
+    return new GitVersioner(config);
   };
 
   CliApp(this.logger) : assert(logger != null) {
