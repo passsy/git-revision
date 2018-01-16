@@ -7,8 +7,7 @@ class GitVersionerConfig {
   String baseBranch;
   String repoPath;
 
-  GitVersionerConfig(this.baseBranch, this.repoPath)
-      : assert(baseBranch != null);
+  GitVersionerConfig(this.baseBranch, this.repoPath) : assert(baseBranch != null);
 }
 
 class GitVersioner {
@@ -26,15 +25,12 @@ class GitVersioner {
         // Author date: when a commit was originally authored. Typically, when someone first ran git commit.
         // Commit date: when a commit was applied to the branch. In many cases it is the same as the author date. Sometimes it differs: if a commit was amended, rebased, or applied by someone other than the author as part of a patch. In those cases, the date will be when the rebase happened or the patch was applied.
         // via https://docs.microsoft.com/en-us/vsts/git/concepts/git-dates
-        var result = await Process.run(
-            'git', ['rev-list', '--pretty=%cI%n', config.baseBranch],
+        var result = await Process.run('git', ['rev-list', '--pretty=%cI%n', config.baseBranch],
             workingDirectory: config?.repoPath);
         var stdout = result.stdout as String;
-        var commits =
-            stdout.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
+        var commits = stdout.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
           var lines = rawCommit.split('\n');
-          return new Commit(
-              lines[0].replaceFirst('commit ', ''), DateTime.parse(lines[1]));
+          return new Commit(lines[0].replaceFirst('commit ', ''), DateTime.parse(lines[1]));
         }).toList();
 
         for (var i = 1; i < commits.length; i++) {

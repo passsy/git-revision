@@ -11,16 +11,14 @@ class ShellGitExtractor implements GitCommands {
   Future<List<Sha1>> commitsToHead() => _notImplemented();
 
   @override
-  Future<List<Sha1>> commitsUpTo(Revision revision, List<String> args) =>
-      _notImplemented();
+  Future<List<Sha1>> commitsUpTo(Revision revision, List<String> args) => _notImplemented();
 
   Future<Revision> _currentBranch;
 
   @override
   Future<Revision> get currentBranch async => _currentBranch ??= () async {
         await _verifyGitWorking();
-        var result =
-            await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD']);
+        var result = await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD']);
         var text = (result.stdout as String).trim();
         return new Revision(text);
       }();
@@ -45,5 +43,5 @@ class ShellGitExtractor implements GitCommands {
   Future<Null> _verifyGitWorking() async => null;
 }
 
-Future<T> _notImplemented<T>() => new Future.error(
-    new UnimplementedError('Sorry, this feature has not been implemented yet'));
+Future<T> _notImplemented<T>() =>
+    new Future.error(new UnimplementedError('Sorry, this feature has not been implemented yet'));

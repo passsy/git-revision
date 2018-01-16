@@ -14,11 +14,9 @@ import 'package:git_revision/cli_app.dart';
 /// A class for invoking [Command]s based on raw command-line arguments.
 class Commander {
   Commander(this.executableName, this.description, {this.logger}) {
-    argParser.addFlag('help',
-        abbr: 'h', negatable: false, help: 'Print this usage information.');
+    argParser.addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.');
     addCommand(new HelpCommand());
-    argParser.addFlag('version',
-        abbr: 'v', help: 'Shows the version information', negatable: false);
+    argParser.addFlag('version', abbr: 'v', help: 'Shows the version information', negatable: false);
     argParser.addOption('context', abbr: 'C', help: '<path>');
   }
 
@@ -85,8 +83,7 @@ Run "$executableName help <command>" for more information about a command.''';
   void printUsage() => logger.stdOut(usage);
 
   /// Throws a [UsageException] with [message].
-  void usageException(String message) =>
-      throw new UsageException(message, _usageWithoutDescription);
+  void usageException(String message) => throw new UsageException(message, _usageWithoutDescription);
 
   /// Adds [Command] as a top-level command to this runner.
   void addCommand(Command command) {
@@ -102,8 +99,7 @@ Run "$executableName help <command>" for more information about a command.''';
   ///
   /// This always returns a [Future] in case the command is asynchronous. The
   /// [Future] will throw a [UsageException] if [args] was invalid.
-  Future<Null> run(Iterable<String> args) =>
-      new Future.sync(() => runCommand(parse(args)));
+  Future<Null> run(Iterable<String> args) => new Future.sync(() => runCommand(parse(args)));
 
   /// Parses [args] and returns the result, converting an [ArgParserException]
   /// to a [UsageException].
@@ -162,8 +158,7 @@ Run "$executableName help <command>" for more information about a command.''';
           command.usageException('Missing subcommand for "$commandString".');
         } else {
           if (command == null) {
-            usageException(
-                'Could not find a command named "${argResults.rest[0]}".');
+            usageException('Could not find a command named "${argResults.rest[0]}".');
           }
 
           command.usageException('Could not find a subcommand named '
@@ -192,8 +187,7 @@ Run "$executableName help <command>" for more information about a command.''';
 
     // Make sure there aren't unexpected arguments.
     if (!command.takesArguments && argResults.rest.isNotEmpty) {
-      command.usageException(
-          'Command "${argResults.name}" does not take any arguments.');
+      command.usageException('Command "${argResults.name}" does not take any arguments.');
     }
 
     return (await command.run());
@@ -210,8 +204,7 @@ Run "$executableName help <command>" for more information about a command.''';
 /// register subcommands.
 abstract class Command {
   Command() {
-    argParser.addFlag('help',
-        abbr: 'h', negatable: false, help: 'Print this usage information.');
+    argParser.addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.');
   }
 
   /// The name of this command.
@@ -238,9 +231,7 @@ abstract class Command {
     parents.add(runner.executableName);
 
     var invocation = parents.reversed.join(" ");
-    return _subcommands.isNotEmpty
-        ? "$invocation <subcommand> [arguments]"
-        : "$invocation [arguments]";
+    return _subcommands.isNotEmpty ? "$invocation <subcommand> [arguments]" : "$invocation [arguments]";
   }
 
   /// The command's parent command, if this is a subcommand.
@@ -299,9 +290,7 @@ abstract class Command {
 
   /// Returns [usage] with [description] removed from the beginning.
   String get _usageWithoutDescription {
-    var buffer = new StringBuffer()
-      ..writeln('Usage: $invocation')
-      ..writeln(argParser.usage);
+    var buffer = new StringBuffer()..writeln('Usage: $invocation')..writeln(argParser.usage);
 
     if (_subcommands.isNotEmpty) {
       buffer.writeln();
@@ -382,19 +371,16 @@ abstract class Command {
   void printUsage() => logger.stdOut(usage);
 
   /// Throws a [UsageException] with [message].
-  void usageException(String message) =>
-      throw new UsageException(message, _usageWithoutDescription);
+  void usageException(String message) => throw new UsageException(message, _usageWithoutDescription);
 }
 
 /// Returns a string representation of [commands] fit for use in a usage string.
 ///
 /// [isSubcommand] indicates whether the commands should be called "commands" or
 /// "subcommands".
-String _getCommandUsage(Map<String, Command> commands,
-    {bool isSubcommand: false}) {
+String _getCommandUsage(Map<String, Command> commands, {bool isSubcommand: false}) {
   // Don't include aliases.
-  var names =
-      commands.keys.where((name) => !commands[name].aliases.contains(name));
+  var names = commands.keys.where((name) => !commands[name].aliases.contains(name));
 
   // Filter out hidden ones, unless they are all hidden.
   var visible = names.where((name) => !commands[name].hidden);
@@ -404,8 +390,7 @@ String _getCommandUsage(Map<String, Command> commands,
   names = names.toList()..sort();
   var length = names.map((name) => name.length).reduce(math.max);
 
-  var buffer =
-      new StringBuffer('Available ${isSubcommand ? "sub" : ""}commands:');
+  var buffer = new StringBuffer('Available ${isSubcommand ? "sub" : ""}commands:');
   for (var name in names) {
     var lines = commands[name].summary.split("\n");
     buffer.writeln();
@@ -422,5 +407,4 @@ String _getCommandUsage(Map<String, Command> commands,
 }
 
 /// Pads [source] to [length] by adding spaces at the end.
-String _padRight(String source, int length) =>
-    source + ' ' * (length - source.length);
+String _padRight(String source, int length) => source + ' ' * (length - source.length);

@@ -46,9 +46,7 @@ class Sha1 {
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        other is Sha1 &&
-            runtimeType == other.runtimeType &&
-            hash == other.hash ||
+        other is Sha1 && runtimeType == other.runtimeType && hash == other.hash ||
         other is Revision && hash == other.rev;
   }
 
@@ -69,9 +67,7 @@ class Revision {
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
-        other is Revision &&
-            runtimeType == other.runtimeType &&
-            rev == other.rev ||
+        other is Revision && runtimeType == other.runtimeType && rev == other.rev ||
         other is Sha1 && rev == other.hash;
   }
 

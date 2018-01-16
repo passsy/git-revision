@@ -7,20 +7,13 @@ import 'package:git_revision/git_revision.dart';
 
 class InitCommand extends Command {
   final String name = 'init';
-  final String description =
-      'Creates a configuration file `.gitrevision.yaml` to add a fixed config to this project';
+  final String description = 'Creates a configuration file `.gitrevision.yaml` to add a fixed config to this project';
 
   InitCommand() {
     argParser
       ..addOption('format',
-          abbr: 'f',
-          help: 'format options',
-          defaultsTo: 'revision',
-          allowed: ['revision', 'more will come...'])
-      ..addOption('baseBranch',
-          abbr: 'b',
-          defaultsTo: 'master',
-          help: 'The branch you work on most of the time');
+          abbr: 'f', help: 'format options', defaultsTo: 'revision', allowed: ['revision', 'more will come...'])
+      ..addOption('baseBranch', abbr: 'b', defaultsTo: 'master', help: 'The branch you work on most of the time');
   }
 
   @override
@@ -47,8 +40,7 @@ class RevisionCommand extends Command {
     String where = globalResults['context']?.trim();
     String baseBranch = argResults['baseBranch'] ?? 'master';
 
-    var gitVersioner =
-        app.versionerProvider(new GitVersionerConfig(baseBranch, where));
+    var gitVersioner = app.versionerProvider(new GitVersionerConfig(baseBranch, where));
 
     //var count = await test(where?.trim(), baseBranch);
     //logger.stdOut("commit count: $count");

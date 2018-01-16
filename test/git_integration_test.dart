@@ -87,8 +87,7 @@ class TempDir {
   int _scriptCount = 0;
 
   Future<Null> setup() async {
-    root = await io.Directory.systemTemp
-        .createTemp('git-revision-integration-test');
+    root = await io.Directory.systemTemp.createTemp('git-revision-integration-test');
     var path = "${root.path }${_slash}repo";
     repo = await new io.Directory(path).create();
   }
@@ -110,14 +109,12 @@ class TempDir {
     await scriptFile.writeAsString(scriptText);
 
     // execute script
-    var permission = await io.Process
-        .run('chmod', ['+x', scriptName], workingDirectory: root.path);
+    var permission = await io.Process.run('chmod', ['+x', scriptName], workingDirectory: root.path);
     handleResult(permission);
 
     print("\nrunning '$scriptName':");
     printOnFailure("\n$scriptText\n\n");
-    var scriptResult = await io.Process.run('../$scriptName', [],
-        workingDirectory: repo.path, runInShell: true);
+    var scriptResult = await io.Process.run('../$scriptName', [], workingDirectory: repo.path, runInShell: true);
     handleResult(scriptResult);
   }
 }
@@ -132,19 +129,16 @@ String commit(String message, DateTime date, [bool add = true]) => sh("""
     unset GIT_COMMITTER_DATE
     """);
 
-String write(String filename, String text) =>
-    sh("""echo "$text" > $filename""");
+String write(String filename, String text) => sh("""echo "$text" > $filename""");
 
 /// trims the script
-String sh(String script) =>
-    script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
+String sh(String script) => script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
 
 void handleResult(io.ProcessResult processResult) {
   printOnFailure(processResult.stdout);
   if (processResult.exitCode != 0) {
     io.stderr.write("Exit code: ${processResult.exitCode}");
     io.stderr.write(processResult.stderr);
-    throw new io.ProcessException(
-        "", [], processResult.stderr, processResult.exitCode);
+    throw new io.ProcessException("", [], processResult.stderr, processResult.exitCode);
   }
 }
