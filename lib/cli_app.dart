@@ -47,9 +47,8 @@ class RevisionCommand extends Command {
     String where = globalResults['context']?.trim();
     String baseBranch = argResults['baseBranch'] ?? 'master';
 
-    var gitVersioner = app.versionerProvider(new GitVersionerConfig(baseBranch, where));
-
-
+    var gitVersioner =
+        app.versionerProvider(new GitVersionerConfig(baseBranch, where));
 
     //var count = await test(where?.trim(), baseBranch);
     //logger.stdOut("commit count: $count");
@@ -87,7 +86,7 @@ typedef GitVersioner VersionerProvider(GitVersionerConfig config);
 class CliApp {
   Commander runner;
   final CliLogger logger;
-  VersionerProvider versionerProvider = (config){
+  VersionerProvider versionerProvider = (config) {
     return new GitVersioner(new ShellGitExtractor(), config);
   };
 

@@ -10,13 +10,13 @@ void main() {
   group('master only', () {
     var time = new DateTime(2017, DateTime.JANUARY, 10);
     TempDir tempDir;
-    setUp(() async{
+    setUp(() async {
       tempDir = new TempDir();
       await tempDir.setup();
       printOnFailure("cd ${tempDir.repo.path} && git log --pretty=fuller");
     });
 
-    tearDown(() async{
+    tearDown(() async {
       await tempDir.cleanup();
     });
 
@@ -24,7 +24,7 @@ void main() {
       var logger = new MockLogger();
       var cliApp = new CliApp.production(logger);
       await cliApp.process(['-C ${tempDir.repo.path}']..addAll(args));
-      if(logger.errors.isNotEmpty) {
+      if (logger.errors.isNotEmpty) {
         print("Error!");
         print(logger.errors);
         throw new Exception("CliApp crashed");
@@ -133,12 +133,11 @@ String commit(String message, DateTime date, [bool add = true]) => sh("""
     """);
 
 String write(String filename, String text) =>
-  sh("""echo "$text" > $filename""");
+    sh("""echo "$text" > $filename""");
 
 /// trims the script
 String sh(String script) =>
-  script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
-
+    script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
 
 void handleResult(io.ProcessResult processResult) {
   printOnFailure(processResult.stdout);
@@ -146,6 +145,6 @@ void handleResult(io.ProcessResult processResult) {
     io.stderr.write("Exit code: ${processResult.exitCode}");
     io.stderr.write(processResult.stderr);
     throw new io.ProcessException(
-      "", [], processResult.stderr, processResult.exitCode);
+        "", [], processResult.stderr, processResult.exitCode);
   }
 }
