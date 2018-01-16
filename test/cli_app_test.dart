@@ -13,7 +13,7 @@ void main() {
 
     setUp(() async {
       logger = new MockLogger();
-      app = new CliApp(null /*not required for tests*/, logger);
+      app = new CliApp(logger);
       await app.process(['help']);
     });
 
@@ -39,11 +39,11 @@ void main() {
   group('empty arguments', () {
     test('has exact same output as help', () async {
       MockLogger logger1 = new MockLogger();
-      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      CliApp app1 = new CliApp(logger1);
       await app1.process(['help']);
 
       MockLogger logger2 = new MockLogger();
-      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      CliApp app2 = new CliApp(logger2);
       await app2.process([]);
 
       expect(logger1.messages, equals(logger2.messages));
@@ -54,11 +54,11 @@ void main() {
   group('--help', () {
     test('has exact same output as help', () async {
       MockLogger logger1 = new MockLogger();
-      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      CliApp app1 = new CliApp(logger1);
       await app1.process(['help']);
 
       MockLogger logger2 = new MockLogger();
-      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      CliApp app2 = new CliApp(logger2);
       await app2.process(['--help']);
 
       expect(logger1.messages, equals(logger2.messages));
@@ -72,7 +72,7 @@ void main() {
 
     setUp(() async {
       logger = new MockLogger();
-      app = new CliApp(null /*not required for tests*/, logger);
+      app = new CliApp(logger);
       await app.process(['version']);
     });
 
@@ -95,11 +95,11 @@ void main() {
   group('--version', () {
     test('has exact same output as version', () async {
       MockLogger logger1 = new MockLogger();
-      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      CliApp app1 = new CliApp(logger1);
       await app1.process(['version']);
 
       MockLogger logger2 = new MockLogger();
-      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      CliApp app2 = new CliApp(logger2);
       await app2.process(['--version']);
 
       expect(logger1.messages, equals(logger2.messages));
@@ -108,11 +108,11 @@ void main() {
 
     test('with known command --version shows command output', () async {
       MockLogger logger1 = new MockLogger();
-      CliApp app1 = new CliApp(null /*not required for tests*/, logger1);
+      CliApp app1 = new CliApp(logger1);
       await app1.process(['help']);
 
       MockLogger logger2 = new MockLogger();
-      CliApp app2 = new CliApp(null /*not required for tests*/, logger2);
+      CliApp app2 = new CliApp(logger2);
       await app2.process(['help', '--version']);
 
       expect(logger1.messages, equals(logger2.messages));
@@ -134,7 +134,8 @@ void main() {
       when(versioner.branchName).thenReturn(new Future.value('myBranch'));
       when(versioner.sha1).thenReturn(new Future.value('1234567'));
 
-      app = new CliApp(versioner, logger);
+      app = new CliApp(logger);
+      app.versionerProvider = (config) => versioner;
       await app.process(['revision']);
       log = logger.messages.join('\n');
     });
@@ -146,6 +147,7 @@ void main() {
     test('shows version name', () async {
       expect(log, contains('Version name: 432-SNAPSHOT'));
     });
+
     test('shows branch', () async {
       expect(log, contains('myBranch'));
     });
@@ -158,7 +160,7 @@ void main() {
     });
 
     test('requires gitVersioner', () async {
-      app = new CliApp(null, new MockLogger());
+      app = new CliApp(new MockLogger());
       try {
         await app.process([]);
       } on ArgumentError catch (e) {
@@ -174,7 +176,7 @@ void main() {
   group('construct app', () {
     test("logger can't be null", () {
       try {
-        new CliApp(null, null);
+        new CliApp(null);
       } on AssertionError catch (e) {
         expect(e.toString(), contains('logger != null'));
       }

@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:args/args.dart';
@@ -19,6 +20,7 @@ class Commander {
     addCommand(new HelpCommand());
     argParser.addFlag('version',
         abbr: 'v', help: 'Shows the version information', negatable: false);
+    argParser.addOption('context', abbr: 'C', help: '<path>');
   }
 
   /// The name of the executable being run.

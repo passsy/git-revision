@@ -1,0 +1,147 @@
+import 'dart:async';
+import 'dart:io' as io;
+
+import 'package:git_revision/cli_app.dart';
+import 'package:test/test.dart';
+
+import 'cli_app_test.dart';
+
+var time = new DateTime(2017, DateTime.JANUARY, 10);
+var hour = const Duration(hours: 1);
+var day = const Duration(days: 1);
+var minutes = const Duration(minutes: 1);
+
+String commit(String message, DateTime date, [bool add = true]) => sh("""
+    export GIT_COMMITTER_DATE="${date.toIso8601String()}"
+    git commit -${add ? 'a' : ''}m "$message" --date "\$GIT_COMMITTER_DATE"
+    unset GIT_COMMITTER_DATE
+    """);
+
+String write(String filename, String text) =>
+    sh("""echo "$text" > $filename""");
+
+/// trims the script
+String sh(String script) =>
+    script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
+
+void main() {
+  group('master only', () {
+    TempDir tempDir;
+    setUp(() async{
+      tempDir = new TempDir();
+      await tempDir.setup();
+    });
+
+    tearDown(() async{
+      await tempDir.cleanup();
+    });
+
+    test('first commmit', () async {
+      final firstCommit = sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          
+          ${commit("initial commit", time)}
+          """);
+
+      await tempDir.run(firstCommit, name: 'init commit');
+
+      print("cd ${tempDir.repo.path} && git log --pretty=fuller");
+
+      var logger = new MockLogger();
+      var cliApp = new CliApp.production(logger);
+      await cliApp.process(['-C ${tempDir.repo.path}', 'revision']);
+      var out = logger.messages.join('\n');
+
+      expect(out, contains('commit count: 1'));
+      expect(out, contains('Revision: 1'));
+      expect(out, contains('Version name: 1'));
+    });
+
+    test('3 commits', () async {
+      final threeCommits = sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          
+          ${commit("initial commit", time)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", time.add(hour * 4))}
+          
+          echo 'third commit' > a.txt
+          ${commit("third commit", time.add(day))}
+          """);
+
+      await tempDir.run(threeCommits, name: 'init with 3 commits');
+
+      print("cd ${tempDir.repo.path} && git log --pretty=fuller");
+
+      var logger = new MockLogger();
+      var cliApp = new CliApp.production(logger);
+      await cliApp.process(['-C ${tempDir.repo.path}', 'revision']);
+      var out = logger.messages.join('\n');
+
+      expect(out, contains('commit count: 3'));
+      expect(out, contains('Revision: 3'));
+      expect(out, contains('Version name: 3'));
+    });
+  });
+}
+
+class TempDir {
+  TempDir();
+
+  io.Directory repo;
+  io.Directory root;
+
+  String get path => root.path;
+
+  final String _slash = io.Platform.pathSeparator;
+  int _scriptCount = 0;
+
+  Future<Null> setup() async {
+    root = await io.Directory.systemTemp
+        .createTemp('git-revision-integration-test');
+    var path = "${root.path }${_slash}repo";
+    repo = await new io.Directory(path).create();
+  }
+
+  Future<Null> cleanup() => root.delete(recursive: true);
+
+  Future<Null> run(String script, {String name}) async {
+    var namePostfix = name != null ? "_$name".replaceAll(" ", "_") : "";
+    var scriptName = "script${_scriptCount++}${namePostfix}.sh";
+    var path = "${root.path}$_slash$scriptName";
+    var scriptFile = await new io.File(path).create();
+    var scriptText = sh("""
+        # Script ${_scriptCount - 1} '$name'
+        # Created at ${new DateTime.now().toIso8601String()}
+        $script
+        """);
+    await scriptFile.writeAsString(scriptText);
+
+    // execute script
+    var permission = await io.Process
+        .run('chmod', ['+x', scriptName], workingDirectory: root.path);
+    handleResult(permission);
+
+    print("\nrunning '$scriptName':\n$scriptText\n\n");
+    var scriptResult = await io.Process.run('../$scriptName', [],
+        workingDirectory: repo.path, runInShell: true);
+    handleResult(scriptResult, true);
+  }
+}
+
+void handleResult(io.ProcessResult processResult, [bool printStdout = false]) {
+  if (printStdout) {
+    print(processResult.stdout);
+  }
+  if (processResult.exitCode != 0) {
+    io.stderr.write("Exit code: ${processResult.exitCode}");
+    io.stderr.write(processResult.stderr);
+    throw new io.ProcessException(
+      "", [], processResult.stderr, processResult.exitCode);
+  }
+}

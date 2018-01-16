@@ -36,29 +36,34 @@ class RevisionCommand extends Command {
   final String name = 'revision';
   final String description = '//TODO';
 
-  final GitVersioner gitVersioner;
+  final CliApp app;
 
-  RevisionCommand(this.gitVersioner);
+  RevisionCommand(this.app) {
+    argParser.addOption('baseBranch', abbr: 'b', help: 'baseBranch');
+  }
 
   @override
   Future run() async {
-    if (argResults.arguments.isEmpty) {
-      assert(() {
-        if (gitVersioner == null)
-          throw new ArgumentError.notNull('gitVersioner');
-        return true;
-      }());
+    String where = globalResults['context']?.trim();
+    String baseBranch = argResults['baseBranch'] ?? 'master';
 
-      var revision = await gitVersioner.revision;
-      var name = await gitVersioner.versionName;
+    var gitVersioner = app.versionerProvider(new GitVersionerConfig(baseBranch, where));
 
-      logger.stdOut('''
+
+
+    //var count = await test(where?.trim(), baseBranch);
+    //logger.stdOut("commit count: $count");
+
+    var revision = await gitVersioner.revision;
+    var name = await gitVersioner.versionName;
+
+    logger.stdOut('''
 Revision: $revision
 Version name: $name
+commit count: $revision
 sha1: ${await gitVersioner.sha1}
 branch: ${await gitVersioner.branchName}
       ''');
-    }
 
     return null;
   }
@@ -77,29 +82,32 @@ class VersionCommand extends Command {
   }
 }
 
+typedef GitVersioner VersionerProvider(GitVersionerConfig config);
+
 class CliApp {
-  final GitVersioner gitVersioner;
   Commander runner;
   final CliLogger logger;
+  VersionerProvider versionerProvider = (config){
+    return new GitVersioner(new ShellGitExtractor(), config);
+  };
 
-  CliApp(this.gitVersioner, this.logger) : assert(logger != null) {
+  CliApp(this.logger) : assert(logger != null) {
     runner = new Commander('git revision', 'Welcome to git revision!')
       ..logger = logger
       //..addCommand(new InitCommand())
       ..addCommand(new VersionCommand())
-      ..addCommand(new RevisionCommand(gitVersioner));
+      ..addCommand(new RevisionCommand(this));
   }
 
-  CliApp.production()
-      : this(new GitVersioner(new ShellGitExtractor()), new CliLogger());
+  CliApp.production([CliLogger logger = const CliLogger()]) : this(logger);
 
-  Future process(List<String> args) async {
-    return await runner.run(args);
-  }
+  Future process(List<String> args) => runner.run(args);
 }
 
 // TODO move out of implementation
 class CliLogger {
+  const CliLogger();
+
   void stdOut(String s) => io.stdout.writeln(s);
 
   void stdErr(String s) => io.stderr.writeln(s);
