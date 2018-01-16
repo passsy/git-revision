@@ -6,53 +6,45 @@ import 'package:test/test.dart';
 
 import 'cli_app_test.dart';
 
-var time = new DateTime(2017, DateTime.JANUARY, 10);
-var hour = const Duration(hours: 1);
-var day = const Duration(days: 1);
-var minutes = const Duration(minutes: 1);
-
-String commit(String message, DateTime date, [bool add = true]) => sh("""
-    export GIT_COMMITTER_DATE="${date.toIso8601String()}"
-    git commit -${add ? 'a' : ''}m "$message" --date "\$GIT_COMMITTER_DATE"
-    unset GIT_COMMITTER_DATE
-    """);
-
-String write(String filename, String text) =>
-    sh("""echo "$text" > $filename""");
-
-/// trims the script
-String sh(String script) =>
-    script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
-
 void main() {
   group('master only', () {
+    var time = new DateTime(2017, DateTime.JANUARY, 10);
     TempDir tempDir;
     setUp(() async{
       tempDir = new TempDir();
       await tempDir.setup();
+      printOnFailure("cd ${tempDir.repo.path} && git log --pretty=fuller");
     });
 
     tearDown(() async{
       await tempDir.cleanup();
     });
 
+    Future<String> runGitRevision(List<String> args) async {
+      var logger = new MockLogger();
+      var cliApp = new CliApp.production(logger);
+      await cliApp.process(['-C ${tempDir.repo.path}']..addAll(args));
+      if(logger.errors.isNotEmpty) {
+        print("Error!");
+        print(logger.errors);
+        throw new Exception("CliApp crashed");
+      }
+      var messages = logger.messages.join('\n');
+      printOnFailure("\n> git revision ${args.join(" ")}");
+      printOnFailure(messages);
+      return messages;
+    }
+
     test('first commmit', () async {
-      final firstCommit = sh("""
+      await tempDir.run(name: 'init commit', script: sh("""
           git init
           echo 'Hello World' > a.txt
           git add a.txt
           
           ${commit("initial commit", time)}
-          """);
+          """));
 
-      await tempDir.run(firstCommit, name: 'init commit');
-
-      print("cd ${tempDir.repo.path} && git log --pretty=fuller");
-
-      var logger = new MockLogger();
-      var cliApp = new CliApp.production(logger);
-      await cliApp.process(['-C ${tempDir.repo.path}', 'revision']);
-      var out = logger.messages.join('\n');
+      var out = await runGitRevision(['revision']);
 
       expect(out, contains('commit count: 1'));
       expect(out, contains('Revision: 1'));
@@ -60,7 +52,7 @@ void main() {
     });
 
     test('3 commits', () async {
-      final threeCommits = sh("""
+      await tempDir.run(name: 'init with 3 commits', script: sh("""
           git init
           echo 'Hello World' > a.txt
           git add a.txt
@@ -72,16 +64,9 @@ void main() {
           
           echo 'third commit' > a.txt
           ${commit("third commit", time.add(day))}
-          """);
+          """));
 
-      await tempDir.run(threeCommits, name: 'init with 3 commits');
-
-      print("cd ${tempDir.repo.path} && git log --pretty=fuller");
-
-      var logger = new MockLogger();
-      var cliApp = new CliApp.production(logger);
-      await cliApp.process(['-C ${tempDir.repo.path}', 'revision']);
-      var out = logger.messages.join('\n');
+      var out = await runGitRevision(['revision']);
 
       expect(out, contains('commit count: 3'));
       expect(out, contains('Revision: 3'));
@@ -110,7 +95,9 @@ class TempDir {
 
   Future<Null> cleanup() => root.delete(recursive: true);
 
-  Future<Null> run(String script, {String name}) async {
+  Future<Null> run({String name, String script}) async {
+    assert(script != null);
+    assert(script.isNotEmpty);
     var namePostfix = name != null ? "_$name".replaceAll(" ", "_") : "";
     var scriptName = "script${_scriptCount++}${namePostfix}.sh";
     var path = "${root.path}$_slash$scriptName";
@@ -127,17 +114,34 @@ class TempDir {
         .run('chmod', ['+x', scriptName], workingDirectory: root.path);
     handleResult(permission);
 
-    print("\nrunning '$scriptName':\n$scriptText\n\n");
+    print("\nrunning '$scriptName':");
+    printOnFailure("\n$scriptText\n\n");
     var scriptResult = await io.Process.run('../$scriptName', [],
         workingDirectory: repo.path, runInShell: true);
-    handleResult(scriptResult, true);
+    handleResult(scriptResult);
   }
 }
 
-void handleResult(io.ProcessResult processResult, [bool printStdout = false]) {
-  if (printStdout) {
-    print(processResult.stdout);
-  }
+var hour = const Duration(hours: 1);
+var day = const Duration(days: 1);
+var minutes = const Duration(minutes: 1);
+
+String commit(String message, DateTime date, [bool add = true]) => sh("""
+    export GIT_COMMITTER_DATE="${date.toIso8601String()}"
+    git commit -${add ? 'a' : ''}m "$message" --date "\$GIT_COMMITTER_DATE"
+    unset GIT_COMMITTER_DATE
+    """);
+
+String write(String filename, String text) =>
+  sh("""echo "$text" > $filename""");
+
+/// trims the script
+String sh(String script) =>
+  script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
+
+
+void handleResult(io.ProcessResult processResult) {
+  printOnFailure(processResult.stdout);
   if (processResult.exitCode != 0) {
     io.stderr.write("Exit code: ${processResult.exitCode}");
     io.stderr.write(processResult.stderr);
