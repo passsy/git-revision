@@ -108,9 +108,13 @@ class GitVersioner {
   /// `null` when ready, errors otherwise
   Future<Null> _verifyGitWorking() async => null;
 
-  Future<int> baseBranchTimeComponent() => baseBranchCommits().then((commits) => _timeComponent(commits));
+  Future<int> _baseBranchTimeComponent;
+  Future<int> baseBranchTimeComponent()
+  => _baseBranchTimeComponent ??= baseBranchCommits().then((commits) => _timeComponent(commits));
 
-  Future<int> featureBranchTimeComponent() => featureBranchCommits().then((commits) => _timeComponent(commits));
+  Future<int> _featureBranchTimeComponent;
+  Future<int> featureBranchTimeComponent()
+  => _featureBranchTimeComponent ??= featureBranchCommits().then((commits) => _timeComponent(commits));
 
   int _timeComponent(List<Commit> commits) {
     assert(commits != null);
