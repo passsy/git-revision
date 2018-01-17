@@ -55,7 +55,6 @@ class RevisionCommand extends Command {
   }
 }
 
-
 int intArg(ArgResults args, String name) {
   var raw = args[name] as String;
   try {

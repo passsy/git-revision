@@ -26,15 +26,15 @@ class GitVersioner {
   Future<int> _revision;
 
   Future<int> get revision async => _revision ??= () async {
-        var start = new DateTime.now();
-
         var commits = await baseBranchCommits();
         var timeComponent = _timeComponent(commits);
-
         return commits.length + timeComponent;
       }();
 
-  Future<String> get versionName => revision.then((count) => "$count");
+  Future<String> get versionName => revision.then((count) {
+        //TODO use formatter
+        return "$count";
+      });
 
   Future<String> _currentBranch;
 
