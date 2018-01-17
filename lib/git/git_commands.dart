@@ -9,6 +9,14 @@ class Commit {
     return 'Commit{sha1: ${sha1.substring(0, 7)}, date: ${date
       .millisecondsSinceEpoch}';
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Commit && runtimeType == other.runtimeType && sha1 == other.sha1 && date == other.date;
+
+  @override
+  int get hashCode => sha1.hashCode ^ date.hashCode;
 }
 
 class LocalChanges {

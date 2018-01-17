@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' as io;
 
+import 'package:args/args.dart';
 import 'package:git_revision/cli/commander.dart';
 import 'package:git_revision/git_revision.dart';
 
@@ -11,31 +12,56 @@ class RevisionCommand extends Command {
   final CliApp app;
 
   RevisionCommand(this.app) {
-    argParser.addOption('baseBranch', abbr: 'b', help: 'baseBranch');
+    argParser.addOption('baseBranch', abbr: 'b', help: 'baseBranch', defaultsTo: 'master');
+    argParser.addOption('yearFactor', abbr: 'y', help: 'increment count per year', defaultsTo: '1000');
+    argParser.addOption('stopDebounce',
+        abbr: 'd',
+        help:
+            'time between two commits which are further apart than this stopDebounce (in hours) will not be included into the timeComponent. A project on hold for a few months will therefore not increase the revision drastically when development starts again.',
+        defaultsTo: '48');
   }
 
   @override
   Future run() async {
     String where = globalResults['context']?.trim();
-    String baseBranch = argResults['baseBranch'] ?? 'master';
+    String baseBranch = argResults['baseBranch'];
+    assert(baseBranch != null);
 
-    var gitVersioner = app.versionerProvider(new GitVersionerConfig(baseBranch, where));
-
-    //var count = await test(where?.trim(), baseBranch);
-    //logger.stdOut("commit count: $count");
+    int yearFactor = intArg(argResults, 'yearFactor');
+    int stopDebounce = intArg(argResults, 'stopDebounce');
+    var gitVersioner = app.versionerProvider(new GitVersionerConfig(baseBranch, where, yearFactor, stopDebounce));
 
     var revision = await gitVersioner.revision;
-    var name = await gitVersioner.versionName;
+    var versionName = await gitVersioner.versionName;
 
     logger.stdOut('''
-Revision: $revision
-Version name: $name
-commit count: $revision
-sha1: ${await gitVersioner.sha1}
-branch: ${await gitVersioner.branchName}
-      ''');
+        versionCode: $revision
+        versionName: $versionName
+        baseBranch: ${gitVersioner.config.baseBranch}
+        currentBranch: ${await gitVersioner.branchName}
+        sha1: ${await gitVersioner.sha1}
+        sha1Short: ${(await gitVersioner.sha1).substring(0, 7)}
+        baseBranchCommitCount: ${(await gitVersioner.baseBranchCommits()).length}
+        baseBranchTimeComponent: ${await gitVersioner.baseBranchTimeComponent()}
+        featureBranchCommitCount: ${(await gitVersioner.featureBranchCommits()).length}
+        featureBranchTimeComponent: ${(await gitVersioner.featureBranchTimeComponent())}
+        yearFactor: ${gitVersioner.config.yearFactor}
+        '''
+        .split('\n')
+        .map((l) => l.trimLeft())
+        .join('\n'));
 
     return null;
+  }
+}
+
+
+int intArg(ArgResults args, String name) {
+  var raw = args[name] as String;
+  try {
+    return int.parse(raw);
+  } on FormatException {
+    throw new ArgError("name is not a integer '$raw'");
   }
 }
 

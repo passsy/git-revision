@@ -46,9 +46,15 @@ void main() {
 
       var out = await runGitRevision(['revision']);
 
-      expect(out, contains('commit count: 1'));
-      expect(out, contains('Revision: 1'));
-      expect(out, contains('Version name: 1'));
+      expect(out, contains('versionCode: 1'));
+      expect(out, contains('baseBranch: master'));
+      expect(out, contains('currentBranch: master'));
+      expect(out, contains('baseBranchCommitCount: 1'));
+      expect(out, contains('featureBranchCommitCount: 0'));
+      expect(out, contains('baseBranchTimeComponent: 0'));
+      expect(out, contains('featureBranchCommitCount: 0'));
+      expect(out, contains('featureBranchTimeComponent: 0'));
+      expect(out, contains('yearFactor: 1000'));
     });
 
     test('3 commits', () async {
@@ -68,9 +74,14 @@ void main() {
 
       var out = await runGitRevision(['revision']);
 
-      expect(out, contains('commit count: 3'));
-      expect(out, contains('Revision: 3'));
-      expect(out, contains('Version name: 3'));
+      expect(out, contains('versionCode: 6'));
+      expect(out, contains('baseBranch: master'));
+      expect(out, contains('currentBranch: master'));
+      expect(out, contains('baseBranchCommitCount: 3'));
+      expect(out, contains('baseBranchTimeComponent: 3'));
+      expect(out, contains('featureBranchCommitCount: 0'));
+      expect(out, contains('featureBranchTimeComponent: 0'));
+      expect(out, contains('yearFactor: 1000'));
     });
   });
 }
