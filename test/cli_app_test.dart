@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:git_revision/cli_app.dart';
+import 'package:git_revision/git/git_commands.dart';
 import 'package:git_revision/git_revision.dart';
 import 'package:matcher/matcher.dart';
 import 'package:mockito/mockito.dart';
@@ -129,10 +130,15 @@ void main() {
     setUp(() async {
       logger = new MockLogger();
       versioner = new MockGitVersioner();
+      when(versioner.config).thenReturn(new GitVersionerConfig("baseBranch", "/path/to/repo", 20000, 96));
       when(versioner.revision).thenReturn(new Future.value('432'));
       when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
       when(versioner.branchName).thenReturn(new Future.value('myBranch'));
       when(versioner.sha1).thenReturn(new Future.value('1234567'));
+      when(versioner.baseBranchCommits).thenReturn(new Future.value(_commits(377)));
+      when(versioner.baseBranchTimeComponent).thenReturn(new Future.value('773'));
+      when(versioner.featureBranchCommits).thenReturn(new Future.value(_commits(677)));
+      when(versioner.featureBranchTimeComponent).thenReturn(new Future.value('776'));
 
       app = new CliApp(logger);
       app.versionerProvider = (config) => versioner;
@@ -141,18 +147,39 @@ void main() {
     });
 
     test('shows revision', () async {
-      expect(log, contains('Revision: 432'));
+      expect(log, contains('versionCode: 432'));
     });
 
     test('shows version name', () async {
-      expect(log, contains('Version name: 432-SNAPSHOT'));
+      expect(log, contains('versionName: 432-SNAPSHOT'));
     });
 
-    test('shows branch', () async {
+    test('shows current branch', () async {
       expect(log, contains('myBranch'));
     });
+
+    test('shows base branch', () async {
+      expect(log, contains('baseBranch'));
+    });
+
     test('shows sha1', () async {
       expect(log, contains('1234567'));
+    });
+
+    test('shows base branch time commits', () async {
+      expect(log, contains('377'));
+    });
+
+    test('shows base branch time component', () async {
+      expect(log, contains('773'));
+    });
+
+    test('shows feature branch time commits', () async {
+      expect(log, contains('677'));
+    });
+
+    test('shows feature branch time component', () async {
+      expect(log, contains('776'));
     });
 
     test('all fields are filled', () async {
@@ -195,4 +222,11 @@ class MockLogger extends CliLogger {
 
   @override
   void stdErr(String s) => errors.add(s);
+}
+
+List<Commit> _commits(int count) {
+  var now = new DateTime.now();
+  return new List(count).map((_) {
+    return new Commit("some sha1", now);
+  }).toList(growable: false);
 }

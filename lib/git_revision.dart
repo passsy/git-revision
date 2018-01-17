@@ -26,7 +26,7 @@ class GitVersioner {
   Future<int> _revision;
 
   Future<int> get revision async => _revision ??= () async {
-        var commits = await baseBranchCommits();
+        var commits = await baseBranchCommits;
         var timeComponent = _timeComponent(commits);
         return commits.length + timeComponent;
       }();
@@ -68,22 +68,22 @@ class GitVersioner {
 
   Future<List<Commit>> _commitsToHeadCache;
 
-  Future<List<Commit>> commitsToHead() {
+  Future<List<Commit>> get commitsToHead {
     return _commitsToHeadCache ??= _commitsUpTo('HEAD');
   }
 
   Future<List<Commit>> _baseBranchCommits;
 
-  Future<List<Commit>> baseBranchCommits() {
+  Future<List<Commit>> get baseBranchCommits {
     return _baseBranchCommits ??= _commitsUpTo(config.baseBranch);
   }
 
   Future<List<Commit>> _featureBranchCommits;
 
-  Future<List<Commit>> featureBranchCommits() {
+  Future<List<Commit>> get featureBranchCommits {
     return _featureBranchCommits ??= () async {
-      var base = await baseBranchCommits();
-      var feature = await commitsToHead();
+      var base = await baseBranchCommits;
+      var feature = await commitsToHead;
 
       return feature.where((c) => !base.contains(c)).toList(growable: false);
     }();
@@ -109,12 +109,12 @@ class GitVersioner {
   Future<Null> _verifyGitWorking() async => null;
 
   Future<int> _baseBranchTimeComponent;
-  Future<int> baseBranchTimeComponent()
-  => _baseBranchTimeComponent ??= baseBranchCommits().then((commits) => _timeComponent(commits));
+  Future<int> get baseBranchTimeComponent =>
+      _baseBranchTimeComponent ??= baseBranchCommits.then((commits) => _timeComponent(commits));
 
   Future<int> _featureBranchTimeComponent;
-  Future<int> featureBranchTimeComponent()
-  => _featureBranchTimeComponent ??= featureBranchCommits().then((commits) => _timeComponent(commits));
+  Future<int> get featureBranchTimeComponent =>
+      _featureBranchTimeComponent ??= featureBranchCommits.then((commits) => _timeComponent(commits));
 
   int _timeComponent(List<Commit> commits) {
     assert(commits != null);
