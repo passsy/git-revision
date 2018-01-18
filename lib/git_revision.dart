@@ -27,18 +27,34 @@ class GitVersioner {
 
   Future<int> get revision async => _revision ??= () async {
         var commits = await baseBranchCommits;
-        var timeComponent = _timeComponent(commits);
+        var timeComponent = await baseBranchTimeComponent;
         return commits.length + timeComponent;
       }();
 
-  Future<String> get versionName => revision.then((count) {
-        //TODO use formatter
-        return "$count";
-      });
+  Future<LocalChanges> _localChanges;
+
+  Future<LocalChanges> get localChanges => _localChanges ??= () async {
+        //TODO implement
+        return LocalChanges.NONE;
+      }();
+
+  Future<String> get versionName async {
+    var rev = await revision;
+    var branch = await branchName;
+    var changes = await localChanges;
+    var dirty = (changes == LocalChanges.NONE) ? '' : '-dirty';
+
+    if (branch == config.baseBranch) {
+      return "$rev$dirty";
+    } else {
+      var additionalCommits = await featureBranchCommits;
+      return "${rev}_${branch}+${additionalCommits.length}${dirty}";
+    }
+  }
 
   Future<String> _currentBranch;
 
-  Future<String> get branchName async => _currentBranch ??= () async {
+  Future<String> get branchName async => _currentBranch ??= time(() async {
         await _verifyGitWorking();
         var name = stdoutText(await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD'])).trim();
 
@@ -49,11 +65,11 @@ class GitVersioner {
         // empty branch names can't exits this means no branch name
         if (name.isEmpty) return null;
         return name;
-      }();
+      }(), 'branchName');
 
   Future<String> _sha1;
 
-  Future<String> get sha1 async => _sha1 ??= () async {
+  Future<String> get sha1 async => _sha1 ??= time(() async {
         await _verifyGitWorking();
         var hash = stdoutText(await Process.run('git', ['rev-parse', 'HEAD'])).trim();
 
@@ -64,55 +80,47 @@ class GitVersioner {
         }());
 
         return hash;
-      }();
+      }(), 'sha1');
 
   Future<List<Commit>> _commitsToHeadCache;
 
   Future<List<Commit>> get commitsToHead {
-    return _commitsToHeadCache ??= _commitsUpTo('HEAD');
+    return _commitsToHeadCache ??= time(_revList('HEAD'), 'allCommits');
   }
 
   Future<List<Commit>> _baseBranchCommits;
 
   Future<List<Commit>> get baseBranchCommits {
-    return _baseBranchCommits ??= _commitsUpTo(config.baseBranch);
+    return _baseBranchCommits ??= time(_revList(config.baseBranch), 'baseCommits');
   }
 
   Future<List<Commit>> _featureBranchCommits;
 
   Future<List<Commit>> get featureBranchCommits {
-    return _featureBranchCommits ??= () async {
-      var base = await baseBranchCommits;
-      var feature = await commitsToHead;
-
-      return feature.where((c) => !base.contains(c)).toList(growable: false);
-    }();
+    return _featureBranchCommits ??= time(_revList('${config.baseBranch}..HEAD'), 'featureCommits');
   }
 
-  Future<List<Commit>> _commitsUpTo(String to) async {
+  /// runs `git rev-list $rev` and returns the commits in order new -> old
+  Future<List<Commit>> _revList(String rev) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-    //
-    // Author date: when a commit was originally authored. Typically, when someone first ran git commit.
-    // Commit date: when a commit was applied to the branch. In many cases it is the same as the author date. Sometimes it differs: if a commit was amended, rebased, or applied by someone other than the author as part of a patch. In those cases, the date will be when the rebase happened or the patch was applied.
-    // via https://docs.microsoft.com/en-us/vsts/git/concepts/git-dates
-    var result = await Process.run('git', ['rev-list', '--pretty=%cI%n', to], workingDirectory: config?.repoPath);
-    var stdout = result.stdout as String;
-    var commits = stdout.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
+    var result =
+        stdoutText(await Process.run('git', ['rev-list', '--pretty=%cI%n', rev], workingDirectory: config?.repoPath));
+    return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
       var lines = rawCommit.split('\n');
       return new Commit(lines[0].replaceFirst('commit ', ''), DateTime.parse(lines[1]));
     }).toList(growable: false);
-
-    return commits;
   }
 
   /// `null` when ready, errors otherwise
   Future<Null> _verifyGitWorking() async => null;
 
   Future<int> _baseBranchTimeComponent;
+
   Future<int> get baseBranchTimeComponent =>
       _baseBranchTimeComponent ??= baseBranchCommits.then((commits) => _timeComponent(commits));
 
   Future<int> _featureBranchTimeComponent;
+
   Future<int> get featureBranchTimeComponent =>
       _featureBranchTimeComponent ??= featureBranchCommits.then((commits) => _timeComponent(commits));
 
@@ -123,9 +131,7 @@ class GitVersioner {
     var completeTime = commits.last.date.difference(commits.first.date).abs();
     if (completeTime == Duration.zero) return 0;
 
-    print("time ${completeTime.inDays}d");
     var completeTimeComponent = _yearFactor(completeTime);
-    print("naive time component $completeTimeComponent");
 
     // find gaps
     var gaps = Duration.zero;
@@ -135,27 +141,29 @@ class GitVersioner {
       var next = commits[i - 1];
       var diff = next.date.difference(prev.date).abs();
       if (diff.inHours >= config.stopDebounce) {
-        print("${diff.inDays.abs()}d gap at ${prev.date
-            .toUtc()
-            .day}/${prev.date
-            .toUtc()
-            .month}/${prev.date
-            .toUtc()
-            .year} between ${next.sha1.substring(0, 7)} and ${prev.sha1.substring(0, 7)}");
         gaps += diff;
       }
     }
 
-    print("combined gap ${gaps.inDays}d");
-
     var gapTimeComponent = _yearFactor(gaps);
-    print('gap timeComponent $gapTimeComponent');
-
     var timeComponent = completeTimeComponent - gapTimeComponent;
-    print("time component without gaps: $timeComponent");
 
     return timeComponent;
   }
 
   int _yearFactor(Duration duration) => (duration.inSeconds * config.yearFactor / _YEAR.inSeconds + 0.5).toInt();
+}
+
+const bool ANALYZE_TIME = false;
+
+Future<T> time<T>(Future<T> f, String name) async {
+  if (ANALYZE_TIME) {
+    var start = new DateTime.now();
+    var result = await f;
+    var diff = new DateTime.now().difference(start);
+    print('> $name took $diff');
+    return result;
+  } else {
+    return await f;
+  }
 }
