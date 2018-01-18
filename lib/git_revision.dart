@@ -48,7 +48,7 @@ class GitVersioner {
       return "$rev$dirty";
     } else {
       var additionalCommits = await featureBranchCommits;
-      return "${rev}_${branch}+${additionalCommits.length}${dirty}";
+      return "${rev}_$branch+${additionalCommits.length}$dirty";
     }
   }
 

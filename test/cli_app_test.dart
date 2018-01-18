@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:git_revision/cli_app.dart';
 import 'package:git_revision/git/git_commands.dart';
 import 'package:git_revision/git_revision.dart';
-import 'package:matcher/matcher.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 

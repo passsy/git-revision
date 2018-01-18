@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:git_revision/cli_app.dart';
+import 'package:meta/meta.dart';
 import 'package:test/test.dart';
 
 import 'cli_app_test.dart';
@@ -105,7 +106,7 @@ class TempDir {
 
   Future<Null> cleanup() => root.delete(recursive: true);
 
-  Future<Null> run({String name, String script}) async {
+  Future<Null> run({String name, @required String script}) async {
     assert(script != null);
     assert(script.isNotEmpty);
     var namePostfix = name != null ? "_$name".replaceAll(" ", "_") : "";
@@ -123,16 +124,16 @@ class TempDir {
     var permission = await io.Process.run('chmod', ['+x', scriptName], workingDirectory: root.path);
     throwOnError(permission);
 
-    printOnFailure("\nrunning '$scriptName':");
+    print("\nrunning '$scriptName':");
     printOnFailure("\n$scriptText\n\n");
     var scriptResult = await io.Process.run('../$scriptName', [], workingDirectory: repo.path, runInShell: true);
     throwOnError(scriptResult);
   }
 }
 
-var hour = const Duration(hours: 1);
-var day = const Duration(days: 1);
-var minutes = const Duration(minutes: 1);
+const Duration hour = const Duration(hours: 1);
+const Duration day = const Duration(days: 1);
+const Duration minutes = const Duration(minutes: 1);
 
 String commit(String message, DateTime date, [bool add = true]) => sh("""
     export GIT_COMMITTER_DATE="${date.toIso8601String()}"

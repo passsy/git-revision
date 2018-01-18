@@ -24,7 +24,7 @@ class LocalChanges {
   final int additions;
   final int deletions;
 
-  static const NONE = const LocalChanges(0, 0, 0);
+  static const LocalChanges NONE = const LocalChanges(0, 0, 0);
 
   const LocalChanges(this.filesChanged, this.additions, this.deletions)
       : assert(filesChanged >= 0),

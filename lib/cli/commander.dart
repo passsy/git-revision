@@ -17,7 +17,7 @@ class Commander {
     argParser.addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.');
     addCommand(new HelpCommand());
     argParser.addFlag('version', abbr: 'v', help: 'Shows the version information', negatable: false);
-    argParser.addOption('context', abbr: 'C', help: '<path>');
+    argParser.addOption('context', abbr: 'C', help: '<path> Run as if git was started in <path> instead of the current working directory');
   }
 
   /// The name of the executable being run.
@@ -34,7 +34,7 @@ class Commander {
   /// override this for a more specific template.
   String get invocation => "$executableName <command> [arguments]";
 
-  CliLogger logger = new CliLogger();
+  CliLogger logger = const CliLogger();
 
   /// Generates a string displaying usage information for the executable.
   ///
