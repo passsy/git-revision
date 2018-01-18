@@ -123,7 +123,7 @@ class TempDir {
     var permission = await io.Process.run('chmod', ['+x', scriptName], workingDirectory: root.path);
     throwOnError(permission);
 
-    print("\nrunning '$scriptName':");
+    printOnFailure("\nrunning '$scriptName':");
     printOnFailure("\n$scriptText\n\n");
     var scriptResult = await io.Process.run('../$scriptName', [], workingDirectory: repo.path, runInShell: true);
     throwOnError(scriptResult);

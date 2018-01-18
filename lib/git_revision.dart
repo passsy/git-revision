@@ -34,8 +34,8 @@ class GitVersioner {
   Future<LocalChanges> _localChanges;
 
   Future<LocalChanges> get localChanges => _localChanges ??= () async {
-        //TODO implement
-        return LocalChanges.NONE;
+        var changes = stdoutText(await Process.run('git', ['diff', '--shortstat', 'HEAD'])).trim();
+        return _parseDiffShortStat(changes);
       }();
 
   Future<String> get versionName async {
@@ -154,8 +154,41 @@ class GitVersioner {
   int _yearFactor(Duration duration) => (duration.inSeconds * config.yearFactor / _YEAR.inSeconds + 0.5).toInt();
 }
 
-const bool ANALYZE_TIME = false;
+/// parses the output of `git diff --shortstat`
+/// https://github.com/git/git/blob/69e6b9b4f4a91ce90f2c38ed2fa89686f8aff44f/diff.c#L1561
+LocalChanges _parseDiffShortStat(String text) {
+  var parts = text.split(",").map((it) => it.trim());
 
+  var filesChanges = 0;
+  var additions = 0;
+  var deletions = 0;
+
+  for (final part in parts) {
+    if (part.contains("changed")) {
+      filesChanges = _startingNumber(part) ?? 0;
+    }
+    if (part.contains("(+)")) {
+      additions = _startingNumber(part) ?? 0;
+    }
+    if (part.contains("(-)")) {
+      deletions = _startingNumber(part) ?? 0;
+    }
+  }
+  return new LocalChanges(filesChanges, additions, deletions);
+}
+
+final _numberRegEx = new RegExp("(\\d+).*");
+
+/// returns the int of a string it starts with
+int _startingNumber(String text) {
+  var match = _numberRegEx.firstMatch(text);
+  if (match != null && match.groupCount >= 1) {
+    return int.parse(match.group(1));
+  }
+  return null;
+}
+
+const bool ANALYZE_TIME = false;
 Future<T> time<T>(Future<T> f, String name) async {
   if (ANALYZE_TIME) {
     var start = new DateTime.now();
