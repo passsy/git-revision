@@ -45,15 +45,12 @@ class LocalChanges {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is LocalChanges &&
-              runtimeType == other.runtimeType &&
-              filesChanged == other.filesChanged &&
-              additions == other.additions &&
-              deletions == other.deletions;
+      other is LocalChanges &&
+          runtimeType == other.runtimeType &&
+          filesChanged == other.filesChanged &&
+          additions == other.additions &&
+          deletions == other.deletions;
 
   @override
-  int get hashCode =>
-      filesChanged.hashCode ^
-      additions.hashCode ^
-      deletions.hashCode;
+  int get hashCode => filesChanged.hashCode ^ additions.hashCode ^ deletions.hashCode;
 }
