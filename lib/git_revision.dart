@@ -56,14 +56,16 @@ class GitVersioner {
 
   Future<String> get branchName async => _currentBranch ??= time(() async {
         await _verifyGitWorking();
-        var name = stdoutText(await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD'])).trim();
+        var name = stdoutTextOrNull(await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD']))?.trim();
+        if (name == null) return null;
+
+        // empty branch names can't exits this means no branch name
+        if (name.isEmpty) return null;
 
         assert(() {
           if (name.split('\n').length != 1) throw new ArgumentError("branch name is multiline '$name'");
           return true;
         }());
-        // empty branch names can't exits this means no branch name
-        if (name.isEmpty) return null;
         return name;
       }(), 'branchName');
 
@@ -90,9 +92,11 @@ class GitVersioner {
 
   Future<List<Commit>> _baseBranchCommits;
 
-  Future<List<Commit>> get baseBranchCommits {
-    return _baseBranchCommits ??= time(_revList(config.baseBranch), 'baseCommits');
-  }
+  Future<List<Commit>> get baseBranchCommits => _baseBranchCommits ??= time(() async {
+        var mergeBase = stdoutText(
+            await Process.run('git', ['merge-base', 'HEAD', config.baseBranch], workingDirectory: config?.repoPath)).trim();
+        return await _revList(mergeBase);
+      }(), 'baseCommits');
 
   Future<List<Commit>> _featureBranchCommits;
 
@@ -189,6 +193,7 @@ int _startingNumber(String text) {
 }
 
 const bool ANALYZE_TIME = false;
+
 Future<T> time<T>(Future<T> f, String name) async {
   if (ANALYZE_TIME) {
     var start = new DateTime.now();
