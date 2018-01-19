@@ -86,23 +86,26 @@ class GitVersioner {
 
   Future<List<Commit>> _commitsToHeadCache;
 
-  Future<List<Commit>> get commitsToHead {
-    return _commitsToHeadCache ??= time(_revList('HEAD'), 'allCommits');
-  }
+  Future<List<Commit>> get commitsToHead => _commitsToHeadCache ??= time(_revList('HEAD'), 'allCommits');
 
   Future<List<Commit>> _baseBranchCommits;
 
-  Future<List<Commit>> get baseBranchCommits => _baseBranchCommits ??= time(() async {
-        var mergeBase = stdoutText(
-            await Process.run('git', ['merge-base', 'HEAD', config.baseBranch], workingDirectory: config?.repoPath)).trim();
-        return await _revList(mergeBase);
-      }(), 'baseCommits');
+  Future<List<Commit>> get baseBranchCommits =>
+      _baseBranchCommits ??= time(mergeBaseHeadBase.then(_revList), 'baseCommits');
 
   Future<List<Commit>> _featureBranchCommits;
 
-  Future<List<Commit>> get featureBranchCommits {
-    return _featureBranchCommits ??= time(_revList('${config.baseBranch}..HEAD'), 'featureCommits');
-  }
+  Future<List<Commit>> get featureBranchCommits =>
+      _featureBranchCommits ??= time(_revList('${config.baseBranch}..HEAD'), 'featureCommits');
+
+  Future<String> _mergeBaseHeadBase;
+
+  /// root of feature branch from baseBranch
+  Future<String> get mergeBaseHeadBase => _mergeBaseHeadBase ??= () async {
+        return stdoutText(
+                await Process.run('git', ['merge-base', 'HEAD', config.baseBranch], workingDirectory: config?.repoPath))
+            .trim();
+      }();
 
   /// runs `git rev-list $rev` and returns the commits in order new -> old
   Future<List<Commit>> _revList(String rev) async {
@@ -120,13 +123,12 @@ class GitVersioner {
 
   Future<int> _baseBranchTimeComponent;
 
-  Future<int> get baseBranchTimeComponent =>
-      _baseBranchTimeComponent ??= baseBranchCommits.then((commits) => _timeComponent(commits));
+  Future<int> get baseBranchTimeComponent => _baseBranchTimeComponent ??= baseBranchCommits.then(_timeComponent);
 
   Future<int> _featureBranchTimeComponent;
 
   Future<int> get featureBranchTimeComponent =>
-      _featureBranchTimeComponent ??= featureBranchCommits.then((commits) => _timeComponent(commits));
+      _featureBranchTimeComponent ??= featureBranchCommits.then(_timeComponent);
 
   int _timeComponent(List<Commit> commits) {
     assert(commits != null);

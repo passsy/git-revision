@@ -152,7 +152,7 @@ void main() {
       var out2 = await git.revision(['revision']);
       expect(out2, contains('versionCode: 8'));
 
-      await git.run(name: 'go back to commit before merge', script: sh("""
+      await git.run(name: 'go back on master to commit before merge', script: sh("""
           git checkout master
           git checkout HEAD^1
           """));
@@ -165,6 +165,7 @@ void main() {
 }
 
 class TempGit {
+  /// set to `true` for debugging to skip deletion of the repo folder
   bool skipCleanup = false;
 
   TempGit();
