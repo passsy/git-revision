@@ -27,15 +27,15 @@ void main() {
 
       var out = await git.revision(['revision']);
 
-      expect(out, contains('versionCode: 1'));
-      expect(out, contains('baseBranch: master'));
-      expect(out, contains('currentBranch: master'));
-      expect(out, contains('baseBranchCommitCount: 1'));
-      expect(out, contains('featureBranchCommitCount: 0'));
-      expect(out, contains('baseBranchTimeComponent: 0'));
-      expect(out, contains('featureBranchCommitCount: 0'));
-      expect(out, contains('featureBranchTimeComponent: 0'));
-      expect(out, contains('yearFactor: 1000'));
+      expect(out, contains('versionCode: 1\n'));
+      expect(out, contains('baseBranch: master\n'));
+      expect(out, contains('currentBranch: master\n'));
+      expect(out, contains('baseBranchCommitCount: 1\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('baseBranchTimeComponent: 0\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchTimeComponent: 0\n'));
+      expect(out, contains('yearFactor: 1000\n'));
     });
 
     test('3 commits', () async {
@@ -55,14 +55,14 @@ void main() {
 
       var out = await git.revision(['revision']);
 
-      expect(out, contains('versionCode: 6'));
-      expect(out, contains('baseBranch: master'));
-      expect(out, contains('currentBranch: master'));
-      expect(out, contains('baseBranchCommitCount: 3'));
-      expect(out, contains('baseBranchTimeComponent: 3'));
-      expect(out, contains('featureBranchCommitCount: 0'));
-      expect(out, contains('featureBranchTimeComponent: 0'));
-      expect(out, contains('yearFactor: 1000'));
+      expect(out, contains('versionCode: 6\n'));
+      expect(out, contains('baseBranch: master\n'));
+      expect(out, contains('currentBranch: master\n'));
+      expect(out, contains('baseBranchCommitCount: 3\n'));
+      expect(out, contains('baseBranchTimeComponent: 3\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchTimeComponent: 0\n'));
+      expect(out, contains('yearFactor: 1000\n'));
     });
 
     test("merge branch with old commits doesn't increase the revision of previous commits", () async {
@@ -98,7 +98,7 @@ void main() {
 
       // revision obviously increased after merge
       var out2 = await git.revision(['revision']);
-      expect(out2, contains('versionCode: 8'));
+      expect(out2, contains('versionCode: 8\n'));
 
       await git.run(name: 'go back to commit before merge', script: sh("""
           git checkout master
@@ -107,7 +107,7 @@ void main() {
 
       // same revision as before
       var out3 = await git.revision(['revision']);
-      expect(out3, contains('versionCode: 3'));
+      expect(out3, contains('versionCode: 3\n'));
     });
   });
 
@@ -131,7 +131,7 @@ void main() {
 
       // get current revision, should not change afterwards
       var out1 = await git.revision(['revision']);
-      expect(out1, contains('versionCode: 3'));
+      expect(out1, contains('versionCode: 3\n'));
 
       await git.run(name: 'merge feature B', script: sh("""
           git checkout -b 'featureB'
@@ -150,7 +150,7 @@ void main() {
 
       // revision obviously increased after merge
       var out2 = await git.revision(['revision']);
-      expect(out2, contains('versionCode: 8'));
+      expect(out2, contains('versionCode: 8\n'));
 
       await git.run(name: 'go back on master to commit before merge', script: sh("""
           git checkout master
@@ -159,7 +159,7 @@ void main() {
 
       // same revision as before
       var out3 = await git.revision(['revision']);
-      expect(out3, contains('versionCode: 3'));
+      expect(out3, contains('versionCode: 3\n'));
     });
   });
 }
