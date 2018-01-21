@@ -118,7 +118,6 @@ void main() {
     });
 
     test("merge branch with old commits doesn't increase the revision of previous commits", () async {
-      git.skipCleanup = true;
       await git.run(name: 'init master branch', script: sh("""
           git init
           echo 'Hello World' > a.txt
@@ -162,6 +161,52 @@ void main() {
       expect(out3, contains('versionCode: 3\n'));
     });
   });
+
+  group('remote', () {
+    TempGit git;
+    setUp(() async {
+      git = await makeTempGit();
+    });
+
+    test("master only on remote", () async {
+      git.skipCleanup = true;
+
+      var repo2 = await new io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      await git.run(name: 'init master branch', repo: repo2, script: sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 4))}
+          """));
+
+      await git.run(name: 'clone and implement feature B', script: sh("""
+          git clone ${repo2.path} .
+          git checkout -b 'featureB'
+          echo 'implement feature B' > b.txt
+          git add b.txt
+          # Date is before the last commit on master
+          ${commit("implement feature B", initTime.add(hour * 6))}
+          
+          echo 'fix bug' > b.txt
+          ${commit("fix bug", initTime.add(day))}
+          """));
+
+      print('cd ${git.repo.path}');
+
+      var out = await git.revision(['revision']);
+      expect(out, contains('versionName: 2_featureB+2\n'));
+
+      // now master branch is only available on remote
+      await git.run(name: 'delete master branch', script: "git branch -d master");
+
+      // output is unchanged
+      var out2 = await git.revision(['revision']);
+      expect(out2, contains('versionName: 2_featureB+2\n'));
+    });
+  });
 }
 
 class TempGit {
@@ -175,12 +220,11 @@ class TempGit {
 
   String get path => root.path;
 
-  final String _slash = io.Platform.pathSeparator;
   int _scriptCount = 0;
 
   Future<Null> setup() async {
     root = await io.Directory.systemTemp.createTemp('git-revision-integration-test');
-    var path = "${root.path }${_slash}repo";
+    var path = "${root.path }${io.Platform.pathSeparator}repo";
     repo = await new io.Directory(path).create();
   }
 
@@ -189,12 +233,12 @@ class TempGit {
     await root.delete(recursive: true);
   }
 
-  Future<Null> run({String name, @required String script}) async {
+  Future<Null> run({String name, @required String script, io.Directory repo}) async {
     assert(script != null);
     assert(script.isNotEmpty);
     var namePostfix = name != null ? "_$name".replaceAll(" ", "_") : "";
     var scriptName = "script${_scriptCount++}$namePostfix.sh";
-    var path = "${root.path}$_slash$scriptName";
+    var path = "${root.path}${io.Platform.pathSeparator}$scriptName";
     var scriptFile = await new io.File(path).create();
     var scriptText = sh("""
         # Script ${_scriptCount - 1} '$name'
@@ -207,13 +251,15 @@ class TempGit {
     var permission = await io.Process.run('chmod', ['+x', scriptName], workingDirectory: root.path);
     _throwOnError(permission);
 
-    printOnFailure("\nrunning '$scriptName':");
+    repo ??= this.repo;
+    printOnFailure("\nrunning '$scriptName' in ${repo.path}:");
     printOnFailure("\n$scriptText\n\n");
     var scriptResult = await io.Process.run('../$scriptName', [], workingDirectory: repo.path, runInShell: true);
     _throwOnError(scriptResult);
   }
 
-  Future<String> revision(List<String> args) async {
+  Future<String> revision(List<String> args, [io.Directory repo]) async {
+    repo ??= this.repo;
     var logger = new MockLogger();
     var cliApp = new CliApp.production(logger);
     await cliApp.process(['-C ${repo.path}']..addAll(args));

@@ -87,32 +87,31 @@ class GitVersioner {
 
   Future<List<Commit>> get baseBranchCommits => mergeBaseOfHeadAndBaseBranch.then(revList);
 
-  Future<List<Commit>> get featureBranchCommits => revList('${config.baseBranch}..HEAD');
+  Future<List<Commit>> get featureBranchCommits => branchLocalOrRemote(config.baseBranch).asyncMap((branch) async {
+        try {
+          return await revList('$branch..HEAD');
+        } catch (e, _) {
+          return null;
+        }
+      }).firstWhere((it) => it != null);
 
   /// root of feature branch from baseBranch
   Future<String> get mergeBaseOfHeadAndBaseBranch async {
-    try {
-      return stdoutText(
-              await Process.run('git', ['merge-base', 'HEAD', config.baseBranch], workingDirectory: config?.repoPath))
-          .trim();
-    } catch (e, _) {
-      return stdoutText(await Process.run('git', ['merge-base', 'HEAD', "origin/${config.baseBranch}"],
-              workingDirectory: config?.repoPath))
-          .trim();
-    }
+    String result = await branchLocalOrRemote(config.baseBranch).asyncMap((branch) async {
+      var text =
+          stdoutTextOrNull(await Process.run('git', ['merge-base', 'HEAD', branch], workingDirectory: config?.repoPath))
+              ?.trim();
+      return text;
+    }).firstWhere((it) => it != null);
+
+    return result;
   }
 
   /// runs `git rev-list $rev` and returns the commits in order new -> old
   Future<List<Commit>> revList(String rev) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-    String result;
-    try {
-      result =
-          stdoutText(await Process.run('git', ['rev-list', '--pretty=%cI%n', rev], workingDirectory: config?.repoPath));
-    } catch (e, _) {
-      result = stdoutText(
-          await Process.run('git', ['rev-list', '--pretty=%cI%n', "origin/$rev"], workingDirectory: config?.repoPath));
-    }
+    String result =
+        stdoutText(await Process.run('git', ['rev-list', '--pretty=%cI%n', rev], workingDirectory: config?.repoPath));
     return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
       var lines = rawCommit.split('\n');
       return new Commit(lines[0].replaceFirst('commit ', ''), DateTime.parse(lines[1]));
@@ -151,6 +150,25 @@ class GitVersioner {
   }
 
   int _yearFactor(Duration duration) => (duration.inSeconds * config.yearFactor / _YEAR.inSeconds + 0.5).toInt();
+
+  /// returns a Stream of branchNames with prepended remotes where [branchName] exists
+  ///
+  /// `git branch --all --list "*$rev"`
+  Stream<String> branchLocalOrRemote(String branchName) async* {
+    var text = stdoutText(
+            await Process.run('git', ['branch', '--all', '--list', '*$branchName'], workingDirectory: config?.repoPath))
+        ?.trim();
+
+    var branches = text
+        .split('\n')
+        // remove asterisk marking the current branch
+        .map((it) => it.replaceFirst("* ", ""))
+        .map((it) => it.trim());
+
+    for (var branch in branches) {
+      yield branch;
+    }
+  }
 }
 
 /// parses the output of `git diff --shortstat`
@@ -187,7 +205,7 @@ int _startingNumber(String text) {
   return null;
 }
 
-const bool ANALYZE_TIME = false;
+const bool ANALYZE_TIME = true;
 
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
 class _CachedGitVersioner extends GitVersioner {
