@@ -35,7 +35,9 @@ class GitVersioner {
   }
 
   Future<LocalChanges> get localChanges async {
-    var changes = stdoutText(await Process.run('git', ['diff', '--shortstat', 'HEAD'])).trim();
+    var changes =
+        stdoutText(await Process.run('git', ['diff', '--shortstat', 'HEAD'], workingDirectory: config?.repoPath))
+            .trim();
     return _parseDiffShortStat(changes);
   }
 
@@ -54,7 +56,9 @@ class GitVersioner {
   }
 
   Future<String> get headBranchName async {
-    var name = stdoutTextOrNull(await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD']))?.trim();
+    var name = stdoutTextOrNull(
+            await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD'], workingDirectory: config?.repoPath))
+        ?.trim();
     if (name == null) return null;
 
     // empty branch names can't exits this means no branch name
@@ -68,7 +72,7 @@ class GitVersioner {
   }
 
   Future<String> get headSha1 async {
-    var hash = stdoutText(await Process.run('git', ['rev-parse', 'HEAD'])).trim();
+    var hash = stdoutText(await Process.run('git', ['rev-parse', 'HEAD'], workingDirectory: config?.repoPath)).trim();
 
     assert(() {
       if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
