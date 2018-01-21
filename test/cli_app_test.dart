@@ -132,8 +132,8 @@ void main() {
       when(versioner.config).thenReturn(new GitVersionerConfig("baseBranch", "/path/to/repo", 20000, 96));
       when(versioner.revision).thenReturn(new Future.value('432'));
       when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
-      when(versioner.branchName).thenReturn(new Future.value('myBranch'));
-      when(versioner.sha1).thenReturn(new Future.value('1234567'));
+      when(versioner.headBranchName).thenReturn(new Future.value('myBranch'));
+      when(versioner.headSha1).thenReturn(new Future.value('1234567'));
       when(versioner.baseBranchCommits).thenReturn(new Future.value(_commits(377)));
       when(versioner.baseBranchTimeComponent).thenReturn(new Future.value('773'));
       when(versioner.featureBranchCommits).thenReturn(new Future.value(_commits(677)));

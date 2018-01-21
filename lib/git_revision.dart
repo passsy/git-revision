@@ -41,7 +41,7 @@ class GitVersioner {
 
   Future<String> get versionName async {
     var rev = await revision;
-    var branch = await branchName;
+    var branch = await headBranchName;
     var changes = await localChanges;
     var dirty = (changes == LocalChanges.NONE) ? '' : '-dirty';
 
@@ -53,7 +53,7 @@ class GitVersioner {
     }
   }
 
-  Future<String> get branchName async {
+  Future<String> get headBranchName async {
     var name = stdoutTextOrNull(await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD']))?.trim();
     if (name == null) return null;
 
@@ -67,7 +67,7 @@ class GitVersioner {
     return name;
   }
 
-  Future<String> get sha1 async {
+  Future<String> get headSha1 async {
     var hash = stdoutText(await Process.run('git', ['rev-parse', 'HEAD'])).trim();
 
     assert(() {
@@ -79,14 +79,14 @@ class GitVersioner {
     return hash;
   }
 
-  Future<List<Commit>> get commitsToHead => _revList('HEAD');
+  Future<List<Commit>> get headCommits => revList('HEAD');
 
-  Future<List<Commit>> get baseBranchCommits => mergeBaseHeadBase.then(_revList);
+  Future<List<Commit>> get baseBranchCommits => mergeBaseOfHeadAndBaseBranch.then(revList);
 
-  Future<List<Commit>> get featureBranchCommits => _revList('${config.baseBranch}..HEAD');
+  Future<List<Commit>> get featureBranchCommits => revList('${config.baseBranch}..HEAD');
 
   /// root of feature branch from baseBranch
-  Future<String> get mergeBaseHeadBase async {
+  Future<String> get mergeBaseOfHeadAndBaseBranch async {
     try {
       return stdoutText(
               await Process.run('git', ['merge-base', 'HEAD', config.baseBranch], workingDirectory: config?.repoPath))
@@ -99,7 +99,7 @@ class GitVersioner {
   }
 
   /// runs `git rev-list $rev` and returns the commits in order new -> old
-  Future<List<Commit>> _revList(String rev) async {
+  Future<List<Commit>> revList(String rev) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
     String result;
     try {
@@ -183,37 +183,63 @@ int _startingNumber(String text) {
   return null;
 }
 
+const bool ANALYZE_TIME = false;
+
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
 class _CachedGitVersioner extends GitVersioner {
   _CachedGitVersioner(GitVersionerConfig config) : super._(config);
+
+  final Map<String, Future> _cache = {};
+
+  /// Caches futures
+  Future<T> cache<T>(Future<T> futureProvider(), String name) async {
+    var cached = _cache[name];
+    if (cached != null) {
+      if (ANALYZE_TIME) print("! cache hit '$name'");
+      return cached;
+    }
+    var future = futureProvider();
+    _cache[name] = future;
+
+    if (ANALYZE_TIME) {
+      var start = new DateTime.now();
+      var result = await future;
+      var diff = new DateTime.now().difference(start);
+      print("> returning '$name' took ${diff.inMilliseconds}ms");
+      return result;
+    } else {
+      return await future;
+    }
+  }
 
   @override
   Future<int> get revision => cache(() => super.revision, 'revision');
 
   @override
   Future<int> get featureBranchTimeComponent =>
-      cache(() => super.featureBranchTimeComponent, 'featureBranchTimeComponent');
+      cache(() => super.featureBranchTimeComponent, '<featureBranch> timeComponent');
 
   @override
-  Future<int> get baseBranchTimeComponent => cache(() => super.baseBranchTimeComponent, 'baseBranchTimeComponent');
+  Future<int> get baseBranchTimeComponent => cache(() => super.baseBranchTimeComponent, '<baseBranch> timeComponent');
 
   @override
-  Future<String> get mergeBaseHeadBase => cache(() => super.mergeBaseHeadBase, 'mergeBaseHeadBase');
+  Future<String> get mergeBaseOfHeadAndBaseBranch =>
+      cache(() => super.mergeBaseOfHeadAndBaseBranch, 'merge-base HEAD <baseBranch>');
 
   @override
-  Future<List<Commit>> get featureBranchCommits => cache(() => super.featureBranchCommits, 'featureBranchCommits');
+  Future<List<Commit>> get featureBranchCommits => cache(() => super.featureBranchCommits, '<featureBranch> commits');
 
   @override
-  Future<List<Commit>> get baseBranchCommits => cache(() => super.baseBranchCommits, 'baseBranchCommits');
+  Future<List<Commit>> get baseBranchCommits => cache(() => super.baseBranchCommits, '<baseBranch> commits');
 
   @override
-  Future<List<Commit>> get commitsToHead => cache(() => super.commitsToHead, 'commitsToHead');
+  Future<List<Commit>> get headCommits => cache(() => super.headCommits, 'HEAD commits');
 
   @override
-  Future<String> get sha1 => cache(() => super.sha1, 'sha1');
+  Future<String> get headSha1 => cache(() => super.headSha1, 'HEAD sha1');
 
   @override
-  Future<String> get branchName => cache(() => super.branchName, 'branchName');
+  Future<String> get headBranchName => cache(() => super.headBranchName, '<branchName>');
 
   @override
   Future<String> get versionName => cache(() => super.versionName, 'versionName');
@@ -222,30 +248,5 @@ class _CachedGitVersioner extends GitVersioner {
   Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'localChanges');
 
   @override
-  Future<List<Commit>> _revList(String rev) => cache(() => super._revList(rev), 'rev-list $rev');
-
-  final bool ANALYZE_TIME = false;
-
-  final Map<String, Future> _cache = {};
-
-  Future<T> cache<T>(Future<T> futureProvider(), String name) async {
-    var cached = _cache[name];
-    if (cached != null) {
-      if (ANALYZE_TIME) print("cache hit $name");
-      return cached;
-    }
-    var future = futureProvider();
-    if (ANALYZE_TIME) print("executing $name");
-    _cache[name] = future;
-
-    if (ANALYZE_TIME) {
-      var start = new DateTime.now();
-      var result = await future;
-      var diff = new DateTime.now().difference(start);
-      print('> $name took ${diff.inMilliseconds}ms');
-      return result;
-    } else {
-      return await future;
-    }
-  }
+  Future<List<Commit>> revList(String rev) => cache(() => super.revList(rev), 'rev-list $rev');
 }
