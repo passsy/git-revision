@@ -187,72 +187,65 @@ int _startingNumber(String text) {
 class _CachedGitVersioner extends GitVersioner {
   _CachedGitVersioner(GitVersionerConfig config) : super._(config);
 
-  Future<int> _revision;
+  @override
+  Future<int> get revision => cache(() => super.revision, 'revision');
 
   @override
-  Future<int> get revision => _revision ??= time(super.revision, 'revision');
-
-  Future<int> _featureBranchTimeComponent;
-
-  @override
-  Future<int> get featureBranchTimeComponent => _featureBranchTimeComponent ??= time(super.featureBranchTimeComponent, 'featureBranchTimeComponent');
-
-  Future<int> _baseBranchTimeComponent;
+  Future<int> get featureBranchTimeComponent =>
+      cache(() => super.featureBranchTimeComponent, 'featureBranchTimeComponent');
 
   @override
-  Future<int> get baseBranchTimeComponent => _baseBranchTimeComponent ??= time(super.baseBranchTimeComponent, 'baseBranchTimeComponent');
-
-  Future<String> _mergeBaseHeadBase;
+  Future<int> get baseBranchTimeComponent => cache(() => super.baseBranchTimeComponent, 'baseBranchTimeComponent');
 
   @override
-  Future<String> get mergeBaseHeadBase => _mergeBaseHeadBase ??= time(super.mergeBaseHeadBase, 'mergeBaseHeadBase');
-
-  Future<List<Commit>> _featureBranchCommits;
+  Future<String> get mergeBaseHeadBase => cache(() => super.mergeBaseHeadBase, 'mergeBaseHeadBase');
 
   @override
-  Future<List<Commit>> get featureBranchCommits => _featureBranchCommits ??= time(super.featureBranchCommits, 'featureBranchCommits');
-
-  Future<List<Commit>> _baseBranchCommits;
+  Future<List<Commit>> get featureBranchCommits => cache(() => super.featureBranchCommits, 'featureBranchCommits');
 
   @override
-  Future<List<Commit>> get baseBranchCommits => _baseBranchCommits ??= time(super.baseBranchCommits, 'baseBranchCommits');
-
-  Future<List<Commit>> _commitsToHead;
+  Future<List<Commit>> get baseBranchCommits => cache(() => super.baseBranchCommits, 'baseBranchCommits');
 
   @override
-  Future<List<Commit>> get commitsToHead => _commitsToHead ??= time(super.commitsToHead, 'commitsToHead');
-
-  Future<String> _sha1;
+  Future<List<Commit>> get commitsToHead => cache(() => super.commitsToHead, 'commitsToHead');
 
   @override
-  Future<String> get sha1 => _sha1 ??= time(super.sha1, 'sha1');
-
-  Future<String> _branchName;
+  Future<String> get sha1 => cache(() => super.sha1, 'sha1');
 
   @override
-  Future<String> get branchName => _branchName ??= time(super.branchName, 'branchName');
-
-  Future<String> _versionName;
+  Future<String> get branchName => cache(() => super.branchName, 'branchName');
 
   @override
-  Future<String> get versionName => _versionName ??= time(super.versionName, 'versionName');
-
-  Future<LocalChanges> _localChanges;
+  Future<String> get versionName => cache(() => super.versionName, 'versionName');
 
   @override
-  Future<LocalChanges> get localChanges => _localChanges ??= time(super.localChanges, 'localChanges');
-}
+  Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'localChanges');
 
-const bool ANALYZE_TIME = false;
+  @override
+  Future<List<Commit>> _revList(String rev) => cache(() => super._revList(rev), 'rev-list $rev');
 
-Future<T> time<T>(Future<T> f, String name) async {
-  if (ANALYZE_TIME) {
-    var start = new DateTime.now();
-    var result = await f;
-    var diff = new DateTime.now().difference(start);
-    print('> $name took ${diff.inMilliseconds}ms');
-    return result;
-  } else {
-    return await f;
+  final bool ANALYZE_TIME = false;
+
+  final Map<String, Future> _cache = {};
+
+  Future<T> cache<T>(Future<T> futureProvider(), String name) async {
+    var cached = _cache[name];
+    if (cached != null) {
+      if (ANALYZE_TIME) print("cache hit $name");
+      return cached;
+    }
+    var future = futureProvider();
+    if (ANALYZE_TIME) print("executing $name");
+    _cache[name] = future;
+
+    if (ANALYZE_TIME) {
+      var start = new DateTime.now();
+      var result = await future;
+      var diff = new DateTime.now().difference(start);
+      print('> $name took ${diff.inMilliseconds}ms');
+      return result;
+    } else {
+      return await future;
+    }
   }
 }
