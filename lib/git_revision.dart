@@ -243,7 +243,7 @@ class CachedGitVersioner extends GitVersioner {
   Future<LocalChanges> get localChanges => _localChanges ??= time(super.localChanges, 'localChanges');
 }
 
-const bool ANALYZE_TIME = true;
+const bool ANALYZE_TIME = false;
 
 Future<T> time<T>(Future<T> f, String name) async {
   if (ANALYZE_TIME) {
