@@ -34,10 +34,21 @@ class GitVersioner {
     return commits.length + timeComponent;
   }
 
+  Future<String> git(String args, {bool onErrorNull = false, bool emptyResultIsError = true}) async {
+    var argList = args.split(' ');
+    var stdoutFunction = onErrorNull ? stdoutTextOrNull : stdoutText;
+    var text = stdoutFunction(await Process.run('git', argList, workingDirectory: config?.repoPath));
+    text = text?.trim();
+    if (emptyResultIsError) {
+      if (text == null || text.isEmpty) {
+        throw new ProcessException('git', argList, "returned nothing");
+      }
+    }
+    return text;
+  }
+
   Future<LocalChanges> get localChanges async {
-    var changes =
-        stdoutText(await Process.run('git', ['diff', '--shortstat', 'HEAD'], workingDirectory: config?.repoPath))
-            .trim();
+    var changes = await git('diff --shortstat HEAD', emptyResultIsError: false);
     return _parseDiffShortStat(changes);
   }
 
@@ -56,9 +67,7 @@ class GitVersioner {
   }
 
   Future<String> get headBranchName async {
-    var name = stdoutTextOrNull(
-            await Process.run('git', ['symbolic-ref', '--short', '-q', 'HEAD'], workingDirectory: config?.repoPath))
-        ?.trim();
+    var name = await git('symbolic-ref --short -q HEAD', onErrorNull: true, emptyResultIsError: false);
     if (name == null) return null;
 
     // empty branch names can't exits this means no branch name
@@ -72,8 +81,7 @@ class GitVersioner {
   }
 
   Future<String> get headSha1 async {
-    var hash = stdoutText(await Process.run('git', ['rev-parse', 'HEAD'], workingDirectory: config?.repoPath)).trim();
-
+    var hash = await git('rev-parse HEAD');
     assert(() {
       if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
       if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
@@ -97,12 +105,9 @@ class GitVersioner {
 
   /// root of feature branch from baseBranch
   Future<String> get mergeBaseOfHeadAndBaseBranch async {
-    String result = await branchLocalOrRemote(config.baseBranch).asyncMap((branch) async {
-      var text =
-          stdoutTextOrNull(await Process.run('git', ['merge-base', 'HEAD', branch], workingDirectory: config?.repoPath))
-              ?.trim();
-      return text;
-    }).firstWhere((it) => it != null);
+    String result = await branchLocalOrRemote(config.baseBranch)
+        .asyncMap((branch) async => await git('merge-base HEAD $branch', onErrorNull: true))
+        .firstWhere((it) => it != null);
 
     return result;
   }
@@ -110,8 +115,7 @@ class GitVersioner {
   /// runs `git rev-list $rev` and returns the commits in order new -> old
   Future<List<Commit>> revList(String rev) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-    String result =
-        stdoutText(await Process.run('git', ['rev-list', '--pretty=%cI%n', rev], workingDirectory: config?.repoPath));
+    String result = await git('rev-list --pretty=%cI%n $rev', emptyResultIsError: false);
     return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
       var lines = rawCommit.split('\n');
       return new Commit(lines[0].replaceFirst('commit ', ''), DateTime.parse(lines[1]));
@@ -155,10 +159,7 @@ class GitVersioner {
   ///
   /// `git branch --all --list "*$rev"`
   Stream<String> branchLocalOrRemote(String branchName) async* {
-    var text = stdoutText(
-            await Process.run('git', ['branch', '--all', '--list', '*$branchName'], workingDirectory: config?.repoPath))
-        ?.trim();
-
+    var text = await git("branch --all --list *$branchName");
     var branches = text
         .split('\n')
         // remove asterisk marking the current branch
@@ -174,6 +175,7 @@ class GitVersioner {
 /// parses the output of `git diff --shortstat`
 /// https://github.com/git/git/blob/69e6b9b4f4a91ce90f2c38ed2fa89686f8aff44f/diff.c#L1561
 LocalChanges _parseDiffShortStat(String text) {
+  if(text == null || text.isEmpty) return LocalChanges.NONE;
   var parts = text.split(",").map((it) => it.trim());
 
   var filesChanges = 0;
@@ -205,7 +207,7 @@ int _startingNumber(String text) {
   return null;
 }
 
-const bool ANALYZE_TIME = true;
+const bool ANALYZE_TIME = false;
 
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
 class _CachedGitVersioner extends GitVersioner {
