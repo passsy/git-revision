@@ -23,7 +23,7 @@ class GitVersioner {
 
   /// always returns a version which automatically caches
   factory GitVersioner(GitVersionerConfig config) {
-    return new CachedGitVersioner(config);
+    return new _CachedGitVersioner(config);
   }
 
   GitVersioner._(this.config);
@@ -184,8 +184,8 @@ int _startingNumber(String text) {
 }
 
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
-class CachedGitVersioner extends GitVersioner {
-  CachedGitVersioner(GitVersionerConfig config) : super._(config);
+class _CachedGitVersioner extends GitVersioner {
+  _CachedGitVersioner(GitVersionerConfig config) : super._(config);
 
   Future<int> _revision;
 
