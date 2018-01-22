@@ -271,6 +271,78 @@ void main() {
       var out2 = await git.revision(['revision']);
       expect(out2, contains('versionName: 2_featureB+2\n'));
     });
+
+    test("master only on remote which is not called origin", () async {
+      var repo2 = await new io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      await git.run(name: 'init master branch', repo: repo2, script: sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 4))}
+          """));
+
+      await git.run(name: 'clone and implement feature B', script: sh("""
+          git clone -o first ${repo2.path} .
+          git checkout -b 'featureB'
+          echo 'implement feature B' > b.txt
+          git add b.txt
+          ${commit("implement feature B", initTime.add(hour * 6))}
+          
+          echo 'fix bug' > b.txt
+          ${commit("fix bug", initTime.add(day))}
+          """));
+
+      var out = await git.revision(['revision']);
+      expect(out, contains('versionName: 2_featureB+2\n'));
+
+      // now master branch is only available on remote
+      await git.run(name: 'delete master branch', script: "git branch -d master");
+
+      // output is unchanged
+      var out2 = await git.revision(['revision']);
+      expect(out2, contains('versionName: 2_featureB+2\n'));
+    });
+
+    test("master only on one remote - multiple remotes", () async {
+      var repo2 = await new io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      await git.run(name: 'init master branch', repo: repo2, script: sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 4))}
+          """));
+
+      await git.run(name: 'add remotes and start working', script: sh("""
+          git init
+          git remote add first ${repo2.path}
+          git remote add second ${repo2.path}
+          git remote add third ${repo2.path}
+          
+          git remote add zcorrect ${repo2.path}
+          git pull --no-commit zcorrect master
+          
+          git checkout -b 'featureB'
+          echo 'implement feature B' > b.txt
+          git add b.txt
+          ${commit("implement feature B", initTime.add(hour * 6))}
+          """));
+
+      var out = await git.revision(['revision']);
+      expect(out, contains('versionName: 2_featureB+1\n'));
+
+      // now master branch is only available on remote
+      await git.run(name: 'delete master branch', script: "git branch -d master");
+
+      // output is unchanged
+      var out2 = await git.revision(['revision']);
+      expect(out2, contains('versionName: 2_featureB+1\n'));
+    });
   });
 }
 
