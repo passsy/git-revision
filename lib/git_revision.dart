@@ -228,7 +228,7 @@ int _startingNumber(String text) {
   return null;
 }
 
-const bool ANALYZE_TIME = true;
+const bool ANALYZE_TIME = false;
 
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
 class _CachedGitVersioner extends GitVersioner {
