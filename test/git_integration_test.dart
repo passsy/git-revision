@@ -99,7 +99,7 @@ void main() {
 
       // revision obviously increased after merge
       var out2 = await git.revision(['revision']);
-      expect(out2, contains('versionCode: 8\n'));
+      expect(out2, contains('versionCode: 7\n'));
 
       await git.run(name: 'go back to commit before merge', script: sh("""
           git checkout master
@@ -227,7 +227,7 @@ void main() {
       // master should be only +2 ahead which are the two merge commits (develop -> master)
       // master will always +1 ahead of develop even when merging (master -> develop)
       var out2 = await git.revision(['revision', '--baseBranch', 'develop']);
-      expect(out2, contains('versionName: 17_master+2\n'));
+      expect(out2, contains('versionName: 16_master+2\n'));
     });
   });
 
