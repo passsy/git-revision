@@ -139,7 +139,7 @@ class GitVersioner {
         await git('rev-list --pretty=%cI%n${firstParentOnly ? ' --first-parent' : ''} $rev', emptyResultIsError: false);
     return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
       var lines = rawCommit.split('\n');
-      return new Commit(lines[0].replaceFirst('commit ', ''), DateTime.parse(lines[1]));
+      return new Commit(lines[0].replaceFirst('commit ', ''), lines[1]);
     }).toList(growable: false);
   }
 

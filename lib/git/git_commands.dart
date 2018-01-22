@@ -1,22 +1,26 @@
 class Commit {
   String sha1;
-  DateTime date;
+  String rawDate;
 
-  Commit(this.sha1, this.date);
+  DateTime parsedDate;
+  DateTime get date => parsedDate ??= DateTime.parse(rawDate);
+
+  Commit(this.sha1, this.rawDate);
 
   @override
   String toString() {
-    return 'Commit{sha1: ${sha1.substring(0, 7)}, date: ${date
-      .millisecondsSinceEpoch}';
+    return 'Commit{sha1: ${sha1.substring(0, 7)}, date: $rawDate';
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Commit && runtimeType == other.runtimeType && sha1 == other.sha1 && date == other.date;
+          other is Commit &&
+              runtimeType == other.runtimeType &&
+              sha1 == other.sha1;
 
   @override
-  int get hashCode => sha1.hashCode ^ date.hashCode;
+  int get hashCode => sha1.hashCode;
 }
 
 class LocalChanges {

@@ -236,6 +236,6 @@ class MockLogger extends CliLogger {
 List<Commit> _commits(int count) {
   var now = new DateTime.now();
   return new List(count).map((_) {
-    return new Commit("some sha1", now);
+    return new Commit("some sha1", now.toIso8601String());
   }).toList(growable: false);
 }
