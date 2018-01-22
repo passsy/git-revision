@@ -31,12 +31,10 @@ class RevisionCommand extends Command {
     int stopDebounce = intArg(argResults, 'stopDebounce');
     var gitVersioner = app.versionerProvider(new GitVersionerConfig(baseBranch, where, yearFactor, stopDebounce));
 
-    var revision = await gitVersioner.revision;
-    var versionName = await gitVersioner.versionName;
 
     logger.stdOut('''
-        versionCode: $revision
-        versionName: $versionName
+        versionCode: ${await gitVersioner.revision}
+        versionName: ${await gitVersioner.versionName}
         baseBranch: ${gitVersioner.config.baseBranch}
         currentBranch: ${await gitVersioner.headBranchName}
         sha1: ${await gitVersioner.headSha1}

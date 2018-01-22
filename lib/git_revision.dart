@@ -130,7 +130,7 @@ class GitVersioner {
 
   // TODO check if always valid to use `.first`
   // Then replace all config.baseBranch with await baseBranch
-  Future<String> get baseBranch => branchLocalOrRemote(config.baseBranch).first;
+  Future<String> get baseBranch => _branchLocalOrRemote(config.baseBranch).first;
 
   /// runs `git rev-list $rev` and returns the commits in order new -> old
   Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) async {
@@ -179,7 +179,7 @@ class GitVersioner {
   /// returns a Stream of branchNames with prepended remotes where [branchName] exists
   ///
   /// `git branch --all --list "*$rev"`
-  Stream<String> branchLocalOrRemote(String branchName) async* {
+  Stream<String> _branchLocalOrRemote(String branchName) async* {
     var text = await git("branch --all --list *$branchName");
     var branches = text
         .split('\n')
@@ -228,29 +228,44 @@ int _startingNumber(String text) {
   return null;
 }
 
-const bool ANALYZE_TIME = false;
+const bool ANALYZE_TIME = true;
 
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
 class _CachedGitVersioner extends GitVersioner {
   _CachedGitVersioner(GitVersionerConfig config) : super._(config);
 
-  final Map<String, Future> _cache = {};
+  var _indent = 0;
+  final Map<String, Future> _futureCache = {};
 
   /// Caches futures
-  Future<T> cache<T>(Future<T> futureProvider(), String name) async {
-    var cached = _cache[name];
+  Future<T> cache<T>(Future<T> futureProvider(), String name, {bool io = false}) async {
+    var cached = _futureCache[name];
     if (cached != null) {
-      if (ANALYZE_TIME) print("! cache hit '$name'");
+      if (ANALYZE_TIME) {
+        for (var i = 0; i < _indent; i++) stdout.write("| ");
+        print(">>>> cache hit '$name'");
+      }
       return cached;
     }
     var future = futureProvider();
-    _cache[name] = future;
+    _futureCache[name] = future;
 
     if (ANALYZE_TIME) {
       var start = new DateTime.now();
+      _indent++;
+      var indent = _indent;
+
+      if (!io) {
+        for (var i = 1; i < indent; i++) stdout.write("| ");
+        print("+ '$name'");
+      }
+
       var result = await future;
+      _indent--;
       var diff = new DateTime.now().difference(start);
-      print("> returning '$name' took ${diff.inMilliseconds}ms");
+
+      for (var i = 1; i < indent; i++) stdout.write("| ");
+      print("${io ? '>' : '=>'} '$name' took ${diff.inMilliseconds}ms");
       return result;
     } else {
       return await future;
@@ -278,33 +293,29 @@ class _CachedGitVersioner extends GitVersioner {
   Future<List<Commit>> get baseBranchCommits => cache(() => super.baseBranchCommits, '<baseBranch> commits');
 
   @override
-  Future<String> get headSha1 => cache(() => super.headSha1, 'HEAD sha1');
+  Future<String> get headSha1 => cache(() => super.headSha1, 'rev-parse HEAD', io: true);
 
   @override
-  Future<String> get headBranchName => cache(() => super.headBranchName, '<branchName>');
+  Future<String> get headBranchName => cache(() => super.headBranchName, 'symbolic-ref --short -q HEAD', io: true);
 
   @override
   Future<String> get versionName => cache(() => super.versionName, 'versionName');
 
   @override
-  Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'localChanges');
+  Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'diff --shortstat HEAD', io: true);
 
   @override
-  Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) =>
-      cache(() => super.revList(rev, firstParentOnly: firstParentOnly), 'rev-list $rev $firstParentOnly');
+  Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) => cache(
+      () => super.revList(rev, firstParentOnly: firstParentOnly),
+      'rev-list $rev${firstParentOnly ? ' --first-parent' : ''}',
+      io: true);
 
   @override
   Future<List<Commit>> get headCommits => cache(() => super.headCommits, 'headCommits');
 
   @override
-  Future<String> get baseBranch => cache(() => super.baseBranch, 'baseBranch');
+  Future<String> get baseBranch => cache(() => super.baseBranch, 'branch --all --list', io: true);
 
   @override
   Future<Commit> get featureBranchOrigin => cache(() => super.featureBranchOrigin, 'featureBranchOrigin');
-
-  @override
-  Stream<String> branchLocalOrRemote(String branchName) {
-    if (ANALYZE_TIME) print('!!! calling uncached branchLocalOrRemote($branchName)');
-    return super.branchLocalOrRemote(branchName);
-  }
 }
