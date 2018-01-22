@@ -30,6 +30,7 @@ void main() {
       expect(out, contains('versionCode: 1\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
+      expect(out, contains('baseBranchCommitCount first-only: 1\n'));
       expect(out, contains('baseBranchCommitCount: 1\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));
       expect(out, contains('baseBranchTimeComponent: 0\n'));
@@ -58,6 +59,7 @@ void main() {
       expect(out, contains('versionCode: 6\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
+      expect(out, contains('baseBranchCommitCount first-only: 3\n'));
       expect(out, contains('baseBranchCommitCount: 3\n'));
       expect(out, contains('baseBranchTimeComponent: 3\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));
@@ -66,7 +68,6 @@ void main() {
     });
 
     test("merge branch with old commits doesn't increase the revision of previous commits", () async {
-      git.skipCleanup = true;
       await git.run(name: 'init master branch', script: sh("""
           git init
           echo 'Hello World' > a.txt
@@ -117,8 +118,8 @@ void main() {
       git = await makeTempGit();
     });
 
-    test("merge branch with old commits doesn't increase the revision of previous commits", () async {
-      await git.run(name: 'init master branch', script: sh("""
+    test("feature branch still has +commits after merge in master", () async {
+      await git.run(name: 'init master branch - work on featureB', script: sh("""
           git init
           echo 'Hello World' > a.txt
           git add a.txt
@@ -126,39 +127,107 @@ void main() {
           
           echo 'second commit' > a.txt
           ${commit("second commit", initTime.add(hour * 6))}
-          """));
-
-      // get current revision, should not change afterwards
-      var out1 = await git.revision(['revision']);
-      expect(out1, contains('versionCode: 3\n'));
-
-      await git.run(name: 'merge feature B', script: sh("""
+          
+          # Work on featureB
           git checkout -b 'featureB'
           echo 'implement feature B' > b.txt
           git add b.txt
           # Date is before the last commit on master
           ${commit("implement feature B", initTime.add(hour * 4))}
           
-          git checkout featureB
           echo 'fix bug' > b.txt
           ${commit("fix bug", initTime.add(day))}
+          """));
+
+      var out = await git.revision(['revision']);
+      expect(out, contains('versionName: 3_featureB+2\n'));
+
+      await git.run(name: 'continue work on master and merge featureB', script: sh("""
+          git checkout master
+          echo 'third commit' > a.txt
+          ${commit("third commit", initTime.add(day + (hour * 2)))}
+          
+          # Merge feature branch
+          git merge --no-ff featureB
+          
+          # Go back to feature branch
+          git checkout featureB
+      """));
+
+      // back on featureB the previous output should not change
+      var out2 = await git.revision(['revision']);
+      expect(out2, contains('versionName: 3_featureB+2\n'));
+    });
+
+    test("git flow - baseBranch=develop - merge develop -> master increases revision", () async {
+      await git.run(name: 'init master branch - create develop', script: sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 4))}
+          
+          # Create develop branch
+          git checkout -b 'develop'
+          """));
+
+      await git.run(name: 'work on feature B', script: sh("""
+          git checkout develop
+          git checkout -b 'featureB'
+          echo 'implement feature B' > b.txt
+          git add b.txt
+          # Date is before the last commit on master
+          ${commit("implement feature B", initTime.add(hour * 6))}
+          
+          echo 'fix bug' > b.txt
+          ${commit("fix bug", initTime.add(day))}
+          """));
+
+      await git.run(name: 'work on feature C', script: sh("""
+          git checkout develop
+          git checkout -b 'featureC'
+          echo 'implement feature C' > c.txt
+          git add c.txt
+          ${commit("implement feature C", initTime.add(day + (hour * 4)))}
+          
+          echo 'fix a bug' > c.txt
+          ${commit("fix bug", initTime.add(day * 2))}
+          """));
+
+      await git.run(name: 'work on feature D', script: sh("""
+          git checkout develop
+          git checkout -b 'featureD'
+          echo 'implement feature D' > d.txt
+          git add d.txt
+          ${commit("implement feature C", initTime.add(day + (hour * 3)))}
+          
+          echo 'fix more bugs' > d.txt
+          ${commit("fix bug", initTime.add(day + (hour * 5)))}
+          """));
+
+      await git.run(name: 'merge C then B into develop and release to master', script: sh("""
+          git checkout develop
+          git merge --no-ff featureC
+          git merge --no-ff featureB
           
           git checkout master
-          git merge --no-ff featureB
+          git merge --no-ff develop  
           """));
 
-      // revision obviously increased after merge
-      var out2 = await git.revision(['revision']);
-      expect(out2, contains('versionCode: 8\n'));
-
-      await git.run(name: 'go back on master to commit before merge', script: sh("""
+      await git.run(name: 'merge D into develop and release to mastser', script: sh("""
+          git checkout develop
+          git merge --no-ff featureD
+          
           git checkout master
-          git checkout HEAD^1
+          git merge --no-ff develop  
           """));
 
-      // same revision as before
-      var out3 = await git.revision(['revision']);
-      expect(out3, contains('versionCode: 3\n'));
+      // master should be only +2 ahead which are the two merge commits (develop -> master)
+      // master will always +1 ahead of develop even when merging (master -> develop)
+      var out2 = await git.revision(['revision', '--baseBranch', 'develop']);
+      expect(out2, contains('versionName: 17_master+2\n'));
     });
   });
 
@@ -169,8 +238,6 @@ void main() {
     });
 
     test("master only on remote", () async {
-      git.skipCleanup = true;
-
       var repo2 = await new io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
       await git.run(name: 'init master branch', repo: repo2, script: sh("""
           git init
@@ -194,8 +261,6 @@ void main() {
           ${commit("fix bug", initTime.add(day))}
           """));
 
-      print('cd ${git.repo.path}');
-
       var out = await git.revision(['revision']);
       expect(out, contains('versionName: 2_featureB+2\n'));
 
@@ -211,6 +276,12 @@ void main() {
 
 class TempGit {
   /// set to `true` for debugging to skip deletion of the repo folder
+  ///
+  /// Usage for debugging
+  /// ```
+  /// git.skipCleanup = true;
+  /// print('cd ${git.repo.path} && stree .');
+  /// ```
   bool skipCleanup = false;
 
   TempGit();

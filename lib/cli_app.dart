@@ -41,10 +41,12 @@ class RevisionCommand extends Command {
         currentBranch: ${await gitVersioner.headBranchName}
         sha1: ${await gitVersioner.headSha1}
         sha1Short: ${(await gitVersioner.headSha1).substring(0, 7)}
+        baseBranchCommitCount first-only: ${(await gitVersioner.firstBaseBranchCommits).length}
         baseBranchCommitCount: ${(await gitVersioner.baseBranchCommits).length}
         baseBranchTimeComponent: ${await gitVersioner.baseBranchTimeComponent}
         featureBranchCommitCount: ${(await gitVersioner.featureBranchCommits).length}
         featureBranchTimeComponent: ${(await gitVersioner.featureBranchTimeComponent)}
+        featureOrigin: ${(await gitVersioner.featureBranchOrigin).sha1}
         yearFactor: ${gitVersioner.config.yearFactor}
         '''
         .split('\n')

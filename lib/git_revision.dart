@@ -54,7 +54,7 @@ class GitVersioner {
 
   Future<String> get versionName async {
     var rev = await revision;
-    var branch = await headBranchName;
+    var branch = await headBranchName ?? await headSha1;
     var changes = await localChanges;
     var dirty = (changes == LocalChanges.NONE) ? '' : '-dirty';
 
@@ -91,31 +91,52 @@ class GitVersioner {
     return hash;
   }
 
-  Future<List<Commit>> get headCommits => revList('HEAD');
-
-  Future<List<Commit>> get baseBranchCommits => mergeBaseOfHeadAndBaseBranch.then(revList);
-
-  Future<List<Commit>> get featureBranchCommits => branchLocalOrRemote(config.baseBranch).asyncMap((branch) async {
-        try {
-          return await revList('$branch..HEAD');
-        } catch (e, _) {
-          return null;
-        }
-      }).firstWhere((it) => it != null);
-
-  /// root of feature branch from baseBranch
-  Future<String> get mergeBaseOfHeadAndBaseBranch async {
-    String result = await branchLocalOrRemote(config.baseBranch)
-        .asyncMap((branch) async => await git('merge-base HEAD $branch', onErrorNull: true))
-        .firstWhere((it) => it != null);
-
-    return result;
+  /// All first-parent commits in baseBranch
+  ///
+  /// Most often a subset of [firstHeadBranchCommits]
+  Future<List<Commit>> get firstBaseBranchCommits async {
+    var base = await baseBranch;
+    var commits = await revList('$base', firstParentOnly: true);
+    return commits;
   }
 
+  /// All commits in HEAD
+  ///
+  /// If HEAD is branched off baseBranch it should contain all commits in [firstBaseBranchCommits]
+  Future<List<Commit>> get headCommits => revList('HEAD');
+
+  /// Commit where the featureBranch branched off the baseBranch
+  Future<Commit> get featureBranchOrigin async {
+    var firstBaseCommits = await firstBaseBranchCommits;
+    var allheadCommits = await headCommits;
+
+    return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
+  }
+
+  /// All commits in baseBranch which are also in history of HEAD
+  ///
+  /// ignores when current branch is merged into baseBranch in the future. Starts from this commit, first finds
+  /// where this branch was branched off the base branch and counts the baseBranch commits from there
+  Future<List<Commit>> get baseBranchCommits => featureBranchOrigin.then((commit) => revList(commit.sha1));
+
+  /// All commits since HEAD branched off the base branch
+  ///
+  /// This are the commits which are added to this branch which are not yet merged into baseBranch at this point.
+  /// They may be merged already in the future history which will be ignored here
+  Future<List<Commit>> get featureBranchCommits async {
+    var origin = await featureBranchOrigin;
+    return revList('HEAD...${origin.sha1}');
+  }
+
+  // TODO check if always valid to use `.first`
+  // Then replace all config.baseBranch with await baseBranch
+  Future<String> get baseBranch => branchLocalOrRemote(config.baseBranch).first;
+
   /// runs `git rev-list $rev` and returns the commits in order new -> old
-  Future<List<Commit>> revList(String rev) async {
+  Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-    String result = await git('rev-list --pretty=%cI%n $rev', emptyResultIsError: false);
+    String result =
+        await git('rev-list --pretty=%cI%n${firstParentOnly ? ' --first-parent' : ''} $rev', emptyResultIsError: false);
     return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
       var lines = rawCommit.split('\n');
       return new Commit(lines[0].replaceFirst('commit ', ''), DateTime.parse(lines[1]));
@@ -175,7 +196,7 @@ class GitVersioner {
 /// parses the output of `git diff --shortstat`
 /// https://github.com/git/git/blob/69e6b9b4f4a91ce90f2c38ed2fa89686f8aff44f/diff.c#L1561
 LocalChanges _parseDiffShortStat(String text) {
-  if(text == null || text.isEmpty) return LocalChanges.NONE;
+  if (text == null || text.isEmpty) return LocalChanges.NONE;
   var parts = text.split(",").map((it) => it.trim());
 
   var filesChanges = 0;
@@ -247,17 +268,14 @@ class _CachedGitVersioner extends GitVersioner {
   Future<int> get baseBranchTimeComponent => cache(() => super.baseBranchTimeComponent, '<baseBranch> timeComponent');
 
   @override
-  Future<String> get mergeBaseOfHeadAndBaseBranch =>
-      cache(() => super.mergeBaseOfHeadAndBaseBranch, 'merge-base HEAD <baseBranch>');
+  Future<List<Commit>> get firstBaseBranchCommits =>
+      cache(() => super.firstBaseBranchCommits, 'firstBaseBranchCommits');
 
   @override
   Future<List<Commit>> get featureBranchCommits => cache(() => super.featureBranchCommits, '<featureBranch> commits');
 
   @override
   Future<List<Commit>> get baseBranchCommits => cache(() => super.baseBranchCommits, '<baseBranch> commits');
-
-  @override
-  Future<List<Commit>> get headCommits => cache(() => super.headCommits, 'HEAD commits');
 
   @override
   Future<String> get headSha1 => cache(() => super.headSha1, 'HEAD sha1');
@@ -272,5 +290,21 @@ class _CachedGitVersioner extends GitVersioner {
   Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'localChanges');
 
   @override
-  Future<List<Commit>> revList(String rev) => cache(() => super.revList(rev), 'rev-list $rev');
+  Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) =>
+      cache(() => super.revList(rev, firstParentOnly: firstParentOnly), 'rev-list $rev $firstParentOnly');
+
+  @override
+  Future<List<Commit>> get headCommits => cache(() => super.headCommits, 'headCommits');
+
+  @override
+  Future<String> get baseBranch => cache(() => super.baseBranch, 'baseBranch');
+
+  @override
+  Future<Commit> get featureBranchOrigin => cache(() => super.featureBranchOrigin, 'featureBranchOrigin');
+
+  @override
+  Stream<String> branchLocalOrRemote(String branchName) {
+    if (ANALYZE_TIME) print('!!! calling uncached branchLocalOrRemote($branchName)');
+    return super.branchLocalOrRemote(branchName);
+  }
 }
