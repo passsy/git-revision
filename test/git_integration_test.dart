@@ -83,6 +83,8 @@ void main() {
       expect(out1, contains('versionCode: 3'));
 
       await git.run(name: 'merge feature B', script: sh("""
+          # branch from initial commit
+          git checkout HEAD^1
           git checkout -b 'featureB'
           echo 'implement feature B' > b.txt
           git add b.txt
@@ -99,7 +101,9 @@ void main() {
 
       // revision obviously increased after merge
       var out2 = await git.revision(['revision']);
-      expect(out2, contains('versionCode: 7\n'));
+      expect(out2, contains('baseBranchTimeComponent: 3\n'));
+      expect(out2, contains('baseBranchCommitCount: 5\n'));
+      expect(out2, contains('versionCode: 8\n'));
 
       await git.run(name: 'go back to commit before merge', script: sh("""
           git checkout master
