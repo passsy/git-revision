@@ -2,100 +2,159 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:args/args.dart';
-import 'package:git_revision/cli/commander.dart';
 import 'package:git_revision/git_revision.dart';
 
-class RevisionCommand extends Command {
-  final String name = 'revision';
-  final String description = '//TODO';
-
-  final CliApp app;
-
-  RevisionCommand(this.app) {
-    argParser.addOption('baseBranch', abbr: 'b', help: 'baseBranch', defaultsTo: 'master');
-    argParser.addOption('yearFactor', abbr: 'y', help: 'increment count per year', defaultsTo: '1000');
-    argParser.addOption('stopDebounce',
-        abbr: 'd',
-        help:
-            'time between two commits which are further apart than this stopDebounce (in hours) will not be included into the timeComponent. A project on hold for a few months will therefore not increase the revision drastically when development starts again.',
-        defaultsTo: '48');
-  }
-
-  @override
-  Future run() async {
-    String where = globalResults['context']?.trim();
-    String baseBranch = argResults['baseBranch'];
-    assert(baseBranch != null);
-
-    int yearFactor = intArg(argResults, 'yearFactor');
-    int stopDebounce = intArg(argResults, 'stopDebounce');
-    var gitVersioner = app.versionerProvider(new GitVersionerConfig(baseBranch, where, yearFactor, stopDebounce));
-
-
-    logger.stdOut('''
-        versionCode: ${await gitVersioner.revision}
-        versionName: ${await gitVersioner.versionName}
-        baseBranch: ${gitVersioner.config.baseBranch}
-        currentBranch: ${await gitVersioner.headBranchName}
-        sha1: ${await gitVersioner.headSha1}
-        sha1Short: ${(await gitVersioner.headSha1).substring(0, 7)}
-        baseBranchCommitCount first-only: ${(await gitVersioner.firstBaseBranchCommits).length}
-        baseBranchCommitCount: ${(await gitVersioner.baseBranchCommits).length}
-        baseBranchTimeComponent: ${await gitVersioner.baseBranchTimeComponent}
-        featureBranchCommitCount: ${(await gitVersioner.featureBranchCommits).length}
-        featureBranchTimeComponent: ${(await gitVersioner.featureBranchTimeComponent)}
-        featureOrigin: ${(await gitVersioner.featureBranchOrigin).sha1}
-        yearFactor: ${gitVersioner.config.yearFactor}
-        '''
-        .split('\n')
-        .map((l) => l.trimLeft())
-        .join('\n'));
-
-    return null;
-  }
-}
-
-int intArg(ArgResults args, String name) {
-  var raw = args[name] as String;
-  try {
-    return int.parse(raw);
-  } on FormatException {
-    throw new ArgError("name is not a integer '$raw'");
-  }
-}
-
-class VersionCommand extends Command {
-  final String name = 'version';
-  final String description = 'Shows the version information';
-
-  VersionCommand();
-
-  @override
-  void run() {
-    //TODO
-    logger.stdOut('Version 0.1.0');
-  }
-}
-
-typedef GitVersioner VersionerProvider(GitVersionerConfig config);
-
 class CliApp {
-  Commander runner;
   final CliLogger logger;
-  VersionerProvider versionerProvider = (config) {
-    return new GitVersioner(config);
-  };
 
-  CliApp(this.logger) : assert(logger != null) {
-    runner = new Commander('git revision', 'Welcome to git revision!')
-      ..logger = logger
-      ..addCommand(new VersionCommand())
-      ..addCommand(new RevisionCommand(this));
-  }
+  CliApp(this.logger) : assert(logger != null);
 
   CliApp.production([CliLogger logger = const CliLogger()]) : this(logger);
 
-  Future process(List<String> args) => runner.run(args);
+  Future<Null> process(List<String> args) async {
+    final cliArgs = parseCliArgs(args);
+    assert(cliArgs != null);
+
+    if (cliArgs.showHelp) {
+      showUsage();
+      return;
+    }
+
+    if (cliArgs.showVersion) {
+      showVersion();
+      return;
+    }
+
+    var versioner = new GitVersioner(cliArgs.toConfig());
+
+    if (cliArgs.fullOutput) {
+      logger.stdOut(trimLines('''
+        versionCode: ${await versioner.revision}
+        versionName: ${await versioner.versionName}
+        baseBranch: ${versioner.config.baseBranch}
+        currentBranch: ${await versioner.branchName}
+        sha1: ${await versioner.sha1}
+        sha1Short: ${(await versioner.sha1).substring(0, 7)}
+        baseBranchCommitCount first-only: ${(await versioner.firstBaseBranchCommits).length}
+        baseBranchCommitCount: ${(await versioner.baseBranchCommits).length}
+        baseBranchTimeComponent: ${await versioner.baseBranchTimeComponent}
+        featureBranchCommitCount: ${(await versioner.featureBranchCommits).length}
+        featureBranchTimeComponent: ${(await versioner.featureBranchTimeComponent)}
+        featureOrigin: ${(await versioner.featureBranchOrigin).sha1}
+        yearFactor: ${versioner.config.yearFactor}
+        '''));
+    } else {
+      // default output
+      var revision = await versioner.versionName;
+      logger.stdOut(revision);
+    }
+  }
+
+  static final _cliArgParser = new ArgParser()
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.')
+    ..addFlag('version', abbr: 'v', help: 'Shows the version information', negatable: false)
+    ..addOption('context',
+        abbr: 'C', help: '<path> Run as if git was started in <path> instead of the current working directory')
+    ..addOption('baseBranch', abbr: 'b', help: 'baseBranch', defaultsTo: GitVersioner.DEFAULT_BRANCH.toString())
+    ..addOption('yearFactor',
+        abbr: 'y', help: 'increment count per year', defaultsTo: GitVersioner.DEFAULT_YEAR_FACTOR.toString())
+    ..addOption(
+      'stopDebounce',
+      abbr: 'd',
+      defaultsTo: GitVersioner.DEFAULT_STOP_DEBOUNCE.toString(),
+      help: 'time between two commits '
+          'which are further apart than this stopDebounce (in hours) will not be included into the timeComponent. '
+          'A project on hold for a few months will therefore not increase the revision drastically when development '
+          'starts again.',
+    )
+    ..addFlag('full', help: 'shows full information about the current revision and the calculations');
+
+  static GitRevisionCliArgs parseCliArgs(List<String> args) {
+    ArgResults argResults = _cliArgParser.parse(args);
+
+    var parsedCliArgs = new GitRevisionCliArgs();
+
+    parsedCliArgs.showHelp = argResults['help'];
+    parsedCliArgs.showVersion = argResults['version'];
+    parsedCliArgs.fullOutput = argResults['full'];
+    parsedCliArgs.repoPath = argResults['context'];
+    parsedCliArgs.baseBranch = argResults['baseBranch'];
+    parsedCliArgs.yearFactor = intArg(argResults, 'yearFactor');
+    parsedCliArgs.stopDebounce = intArg(argResults, 'stopDebounce');
+    if (argResults.rest.length == 1) {
+      var rest = argResults.rest[0];
+      if (rest.isNotEmpty) {
+        parsedCliArgs.revision = rest;
+      }
+    } else if (argResults.rest.length > 1) {
+      throw new ArgError('expected only one revision argument, found ${argResults.rest.length}: ${argResults.rest}');
+    }
+
+    return parsedCliArgs;
+  }
+
+  static int intArg(ArgResults args, String name) {
+    var raw = (args[name] as String)?.trim();
+    try {
+      return int.parse(raw);
+    } on FormatException {
+      throw new ArgError("$name is not a integer '$raw'");
+    }
+  }
+
+  void showUsage() {
+    logger.stdOut(_cliArgParser.usage);
+  }
+
+  void showVersion() {
+    logger.stdOut("Version 0.4.0");
+  }
+}
+
+String trimLines(String text) => text.split('\n').map((line) => line.trimLeft()).join('\n').trim();
+
+class GitRevisionCliArgs {
+  bool showHelp = false;
+  bool showVersion = false;
+
+  String repoPath = null;
+  String revision = 'HEAD';
+  String baseBranch = GitVersioner.DEFAULT_BRANCH;
+  int yearFactor = GitVersioner.DEFAULT_YEAR_FACTOR;
+  int stopDebounce = GitVersioner.DEFAULT_STOP_DEBOUNCE;
+
+  bool fullOutput = false;
+
+  @override
+  String toString() =>
+      'GitRevisionCliArgs{helpFlag: $showHelp, versionFlag: $showVersion, baseBranch: $baseBranch, repoPath: $repoPath, yearFactor: $yearFactor, stopDebounce: $stopDebounce}';
+
+  GitVersionerConfig toConfig() => new GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, revision);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GitRevisionCliArgs &&
+          runtimeType == other.runtimeType &&
+          showHelp == other.showHelp &&
+          showVersion == other.showVersion &&
+          baseBranch == other.baseBranch &&
+          repoPath == other.repoPath &&
+          yearFactor == other.yearFactor &&
+          stopDebounce == other.stopDebounce &&
+          revision == other.revision &&
+          fullOutput == other.fullOutput;
+
+  @override
+  int get hashCode =>
+      showHelp.hashCode ^
+      showVersion.hashCode ^
+      baseBranch.hashCode ^
+      repoPath.hashCode ^
+      yearFactor.hashCode ^
+      stopDebounce.hashCode ^
+      revision.hashCode ^
+      fullOutput.hashCode;
 }
 
 // TODO move out of implementation

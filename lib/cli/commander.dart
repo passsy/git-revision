@@ -74,7 +74,7 @@ Run "$executableName help <command>" for more information about a command.''';
   /// available via [Command.globalResults]. Commands should be registered with
   /// [addCommand] rather than directly on the parser.
   ArgParser get argParser => _argParser;
-  final _argParser = new ArgParser();
+  final _argParser = new ArgParser(allowTrailingOptions: true);
 
   /// Prints the usage information for this runner.
   ///

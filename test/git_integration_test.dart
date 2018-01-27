@@ -25,7 +25,7 @@ void main() {
           ${commit("initial commit", initTime)}
           """));
 
-      var out = await git.revision(['revision']);
+      var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 1\n'));
       expect(out, contains('baseBranch: master\n'));
@@ -36,7 +36,7 @@ void main() {
       expect(out, contains('baseBranchTimeComponent: 0\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));
       expect(out, contains('featureBranchTimeComponent: 0\n'));
-      expect(out, contains('yearFactor: 1000\n'));
+      expect(out, contains('yearFactor: 1000'));
     });
 
     test('3 commits', () async {
@@ -54,7 +54,7 @@ void main() {
           ${commit("third commit", initTime.add(day))}
           """));
 
-      var out = await git.revision(['revision']);
+      var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 6\n'));
       expect(out, contains('baseBranch: master\n'));
@@ -64,7 +64,7 @@ void main() {
       expect(out, contains('baseBranchTimeComponent: 3\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));
       expect(out, contains('featureBranchTimeComponent: 0\n'));
-      expect(out, contains('yearFactor: 1000\n'));
+      expect(out, contains('yearFactor: 1000'));
     });
 
     test("merge branch with old commits doesn't increase the revision of previous commits", () async {
@@ -79,7 +79,7 @@ void main() {
           """));
 
       // get current revision, should not change afterwards
-      var out1 = await git.revision(['revision']);
+      var out1 = await git.revision(['--full']);
       expect(out1, contains('versionCode: 3'));
 
       await git.run(name: 'merge feature B', script: sh("""
@@ -100,7 +100,7 @@ void main() {
           """));
 
       // revision obviously increased after merge
-      var out2 = await git.revision(['revision']);
+      var out2 = await git.revision(['--full']);
       expect(out2, contains('baseBranchTimeComponent: 6\n'));
       expect(out2, contains('baseBranchCommitCount: 5\n'));
       expect(out2, contains('versionCode: 11\n'));
@@ -111,7 +111,7 @@ void main() {
           """));
 
       // same revision as before
-      var out3 = await git.revision(['revision']);
+      var out3 = await git.revision(['--full']);
       expect(out3, contains('versionCode: 3\n'));
     });
   });
@@ -143,7 +143,7 @@ void main() {
           ${commit("fix bug", initTime.add(day))}
           """));
 
-      var out = await git.revision(['revision']);
+      var out = await git.revision(['--full']);
       expect(out, contains('versionName: 3_featureB+2\n'));
 
       await git.run(name: 'continue work on master and merge featureB', script: sh("""
@@ -159,7 +159,7 @@ void main() {
       """));
 
       // back on featureB the previous output should not change
-      var out2 = await git.revision(['revision']);
+      var out2 = await git.revision(['--full']);
       expect(out2, contains('versionName: 3_featureB+2\n'));
     });
 
@@ -230,7 +230,7 @@ void main() {
 
       // master should be only +2 ahead which are the two merge commits (develop -> master)
       // master will always +1 ahead of develop even when merging (master -> develop)
-      var out2 = await git.revision(['revision', '--baseBranch', 'develop']);
+      var out2 = await git.revision(['--full', '--baseBranch', 'develop']);
       expect(out2, contains('versionName: 17_master+2\n'));
     });
   });
@@ -265,14 +265,14 @@ void main() {
           ${commit("fix bug", initTime.add(day))}
           """));
 
-      var out = await git.revision(['revision']);
+      var out = await git.revision(['--full']);
       expect(out, contains('versionName: 2_featureB+2\n'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
-      var out2 = await git.revision(['revision']);
+      var out2 = await git.revision(['--full']);
       expect(out2, contains('versionName: 2_featureB+2\n'));
     });
 
@@ -299,14 +299,14 @@ void main() {
           ${commit("fix bug", initTime.add(day))}
           """));
 
-      var out = await git.revision(['revision']);
+      var out = await git.revision(['--full']);
       expect(out, contains('versionName: 2_featureB+2\n'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
-      var out2 = await git.revision(['revision']);
+      var out2 = await git.revision(['--full']);
       expect(out2, contains('versionName: 2_featureB+2\n'));
     });
 
@@ -337,14 +337,14 @@ void main() {
           ${commit("implement feature B", initTime.add(hour * 6))}
           """));
 
-      var out = await git.revision(['revision']);
+      var out = await git.revision(['--full']);
       expect(out, contains('versionName: 2_featureB+1\n'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
-      var out2 = await git.revision(['revision']);
+      var out2 = await git.revision(['--full']);
       expect(out2, contains('versionName: 2_featureB+1\n'));
     });
   });
@@ -409,7 +409,7 @@ class TempGit {
     repo ??= this.repo;
     var logger = new MockLogger();
     var cliApp = new CliApp.production(logger);
-    await cliApp.process(['-C ${repo.path}']..addAll(args));
+    await cliApp.process(['-C', '${repo.path}']..addAll(args));
     if (logger.errors.isNotEmpty) {
       print("Error!");
       print(logger.errors);

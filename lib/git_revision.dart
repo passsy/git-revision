@@ -9,16 +9,38 @@ class GitVersionerConfig {
   String repoPath;
   int yearFactor;
   int stopDebounce;
+  /// The revision for which the version should be calculated
+  String rev;
 
-  GitVersionerConfig(this.baseBranch, this.repoPath, this.yearFactor, this.stopDebounce)
+  GitVersionerConfig(this.baseBranch, this.repoPath, this.yearFactor, this.stopDebounce, this.rev)
       : assert(baseBranch != null),
         assert(yearFactor >= 0),
-        assert(stopDebounce >= 0);
+        assert(stopDebounce >= 0),
+        assert(rev != null && rev.isNotEmpty);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GitVersionerConfig &&
+          runtimeType == other.runtimeType &&
+          baseBranch == other.baseBranch &&
+          repoPath == other.repoPath &&
+          yearFactor == other.yearFactor &&
+          stopDebounce == other.stopDebounce &&
+          rev == other.rev;
+
+  @override
+  int get hashCode =>
+      baseBranch.hashCode ^ repoPath.hashCode ^ yearFactor.hashCode ^ stopDebounce.hashCode ^ rev.hashCode;
 }
 
 const Duration _YEAR = const Duration(days: 365);
 
 class GitVersioner {
+  static const DEFAULT_BRANCH = 'master';
+  static const DEFAULT_YEAR_FACTOR = 1000;
+  static const DEFAULT_STOP_DEBOUNCE = 48;
+
   final GitVersionerConfig config;
 
   /// always returns a version which automatically caches
@@ -48,13 +70,19 @@ class GitVersioner {
   }
 
   Future<LocalChanges> get localChanges async {
+    if(config.rev != 'HEAD') {
+      // local changes are only interesting for HEAD during active development
+      return LocalChanges.NONE;
+    }
+
     var changes = await git('diff --shortstat HEAD', emptyResultIsError: false);
     return _parseDiffShortStat(changes);
   }
 
+  // TODO swap name with revision
   Future<String> get versionName async {
     var rev = await revision;
-    var branch = await headBranchName ?? await headSha1;
+    var branch = await branchName ?? await sha1;
     var changes = await localChanges;
     var dirty = (changes == LocalChanges.NONE) ? '' : '-dirty';
 
@@ -66,8 +94,8 @@ class GitVersioner {
     }
   }
 
-  Future<String> get headBranchName async {
-    var name = await git('symbolic-ref --short -q HEAD', onErrorNull: true, emptyResultIsError: false);
+  Future<String> get branchName async {
+    var name = await git('symbolic-ref --short -q ${config.rev}', onErrorNull: true, emptyResultIsError: false);
     if (name == null) return null;
 
     // empty branch names can't exits this means no branch name
@@ -80,8 +108,8 @@ class GitVersioner {
     return name;
   }
 
-  Future<String> get headSha1 async {
-    var hash = await git('rev-parse HEAD');
+  Future<String> get sha1 async {
+    var hash = await git('rev-parse ${config.rev}');
     assert(() {
       if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
       if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
@@ -100,32 +128,32 @@ class GitVersioner {
     return commits;
   }
 
-  /// All commits in HEAD
+  /// All commits in history of [GitVersionerConfig.rev]
   ///
-  /// If HEAD is branched off baseBranch it should contain all commits in [firstBaseBranchCommits]
-  Future<List<Commit>> get headCommits => revList('HEAD');
+  /// If [GitVersionerConfig.rev] is branched off baseBranch it should contain all commits in [firstBaseBranchCommits]
+  Future<List<Commit>> get commits => revList(config.rev);
 
   /// Commit where the featureBranch branched off the baseBranch
   Future<Commit> get featureBranchOrigin async {
     var firstBaseCommits = await firstBaseBranchCommits;
-    var allheadCommits = await headCommits;
+    var allheadCommits = await commits;
 
     return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
   }
 
-  /// All commits in baseBranch which are also in history of HEAD
+  /// All commits in baseBranch which are also in history of [GitVersionerConfig.rev]
   ///
   /// ignores when current branch is merged into baseBranch in the future. Starts from this commit, first finds
   /// where this branch was branched off the base branch and counts the baseBranch commits from there
   Future<List<Commit>> get baseBranchCommits => featureBranchOrigin.then((commit) => revList(commit.sha1));
 
-  /// All commits since HEAD branched off the base branch
+  /// All commits since [GitVersionerConfig.rev] branched off the base branch
   ///
   /// This are the commits which are added to this branch which are not yet merged into baseBranch at this point.
   /// They may be merged already in the future history which will be ignored here
   Future<List<Commit>> get featureBranchCommits async {
     var origin = await featureBranchOrigin;
-    return revList('HEAD...${origin.sha1}');
+    return revList('${config.rev}...${origin.sha1}');
   }
 
   // TODO check if always valid to use `.first`
@@ -292,16 +320,16 @@ class _CachedGitVersioner extends GitVersioner {
   Future<List<Commit>> get baseBranchCommits => cache(() => super.baseBranchCommits, '<baseBranch> commits');
 
   @override
-  Future<String> get headSha1 => cache(() => super.headSha1, 'rev-parse HEAD', io: true);
+  Future<String> get sha1 => cache(() => super.sha1, 'rev-parse ${config.rev}', io: true);
 
   @override
-  Future<String> get headBranchName => cache(() => super.headBranchName, 'symbolic-ref --short -q HEAD', io: true);
+  Future<String> get branchName => cache(() => super.branchName, 'symbolic-ref --short -q ${config.rev}', io: true);
 
   @override
   Future<String> get versionName => cache(() => super.versionName, 'versionName');
 
   @override
-  Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'diff --shortstat HEAD', io: true);
+  Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'diff --shortstat ${config.rev}', io: true);
 
   @override
   Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) => cache(
@@ -310,7 +338,7 @@ class _CachedGitVersioner extends GitVersioner {
       io: true);
 
   @override
-  Future<List<Commit>> get headCommits => cache(() => super.headCommits, 'headCommits');
+  Future<List<Commit>> get commits => cache(() => super.commits, 'commits');
 
   @override
   Future<String> get baseBranch => cache(() => super.baseBranch, 'branch --all --list', io: true);
