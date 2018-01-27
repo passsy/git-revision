@@ -96,14 +96,14 @@ void main() {
           ${commit("fix bug", initTime.add(day))}
           
           git checkout master
-          git merge --no-ff featureB
+          ${merge("featureB", initTime.add(day * 2 + (hour * 1)))}
           """));
 
       // revision obviously increased after merge
       var out2 = await git.revision(['revision']);
-      expect(out2, contains('baseBranchTimeComponent: 3\n'));
+      expect(out2, contains('baseBranchTimeComponent: 6\n'));
       expect(out2, contains('baseBranchCommitCount: 5\n'));
-      expect(out2, contains('versionCode: 8\n'));
+      expect(out2, contains('versionCode: 11\n'));
 
       await git.run(name: 'go back to commit before merge', script: sh("""
           git checkout master
@@ -152,7 +152,7 @@ void main() {
           ${commit("third commit", initTime.add(day + (hour * 2)))}
           
           # Merge feature branch
-          git merge --no-ff featureB
+          ${merge("featureB", initTime.add(day + (hour * 3)))}
           
           # Go back to feature branch
           git checkout featureB
@@ -213,25 +213,25 @@ void main() {
 
       await git.run(name: 'merge C then B into develop and release to master', script: sh("""
           git checkout develop
-          git merge --no-ff featureC
-          git merge --no-ff featureB
+          ${merge('featureC', initTime.add(day * 2 + (hour * 1)))}
+          ${merge('featureB', initTime.add(day * 2 + (hour * 2)))}
           
           git checkout master
-          git merge --no-ff develop  
+          ${merge("develop", initTime.add(day * 2 + (hour * 3)))}
           """));
 
       await git.run(name: 'merge D into develop and release to mastser', script: sh("""
           git checkout develop
-          git merge --no-ff featureD
+          ${merge("featureD", initTime.add(day * 2 + (hour * 4)))}
           
           git checkout master
-          git merge --no-ff develop  
+          ${merge("develop", initTime.add(day * 2 + (hour * 5)))}
           """));
 
       // master should be only +2 ahead which are the two merge commits (develop -> master)
       // master will always +1 ahead of develop even when merging (master -> develop)
       var out2 = await git.revision(['revision', '--baseBranch', 'develop']);
-      expect(out2, contains('versionName: 16_master+2\n'));
+      expect(out2, contains('versionName: 17_master+2\n'));
     });
   });
 
@@ -441,6 +441,11 @@ String commit(String message, DateTime date, [bool add = true]) => sh("""
     git commit -${add ? 'a' : ''}m "$message" --date "\$GIT_COMMITTER_DATE"
     unset GIT_COMMITTER_DATE
     """);
+
+void merge(String branchToMerge, DateTime date, [bool ff = false]) => sh("""
+    git merge${ff ? '' : ' --no-ff'} $branchToMerge --no-commit
+    ${commit("Merge branch '$branchToMerge'", date)}
+""");
 
 /// trims the script
 String sh(String script) => script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
