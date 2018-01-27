@@ -154,8 +154,6 @@ class GitVersioner {
     var completeTime = commits.last.date.difference(commits.first.date).abs();
     if (completeTime == Duration.zero) return 0;
 
-    var completeTimeComponent = _yearFactor(completeTime);
-
     // find gaps
     var gaps = Duration.zero;
     for (var i = 1; i < commits.length; i++) {
@@ -168,8 +166,9 @@ class GitVersioner {
       }
     }
 
-    var gapTimeComponent = _yearFactor(gaps);
-    var timeComponent = completeTimeComponent - gapTimeComponent;
+    // remove huge gaps where no work happened
+    var workingTime = completeTime - gaps;
+    var timeComponent = _yearFactor(workingTime);
 
     return timeComponent;
   }
