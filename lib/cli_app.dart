@@ -131,7 +131,7 @@ class GitRevisionCliArgs {
   bool showHelp = false;
   bool showVersion = false;
 
-  String repoPath = null;
+  String repoPath;
   String revision = 'HEAD';
   String baseBranch = GitVersioner.DEFAULT_BRANCH;
   int yearFactor = GitVersioner.DEFAULT_YEAR_FACTOR;

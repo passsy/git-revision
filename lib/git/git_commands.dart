@@ -1,11 +1,11 @@
 class Commit {
+  Commit(this.sha1, this.rawDate);
+
   String sha1;
   String rawDate;
-
   DateTime parsedDate;
-  DateTime get date => parsedDate ??= DateTime.parse(rawDate);
 
-  Commit(this.sha1, this.rawDate);
+  DateTime get date => parsedDate ??= DateTime.parse(rawDate);
 
   @override
   String toString() {

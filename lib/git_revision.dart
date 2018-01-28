@@ -38,9 +38,9 @@ class GitVersionerConfig {
 const Duration _YEAR = const Duration(days: 365);
 
 class GitVersioner {
-  static const DEFAULT_BRANCH = 'master';
-  static const DEFAULT_YEAR_FACTOR = 1000;
-  static const DEFAULT_STOP_DEBOUNCE = 48;
+  static const String DEFAULT_BRANCH = 'master';
+  static const int DEFAULT_YEAR_FACTOR = 1000;
+  static const int DEFAULT_STOP_DEBOUNCE = 48;
 
   final GitVersionerConfig config;
 
