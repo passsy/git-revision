@@ -58,12 +58,12 @@ class CliApp {
 
   static final _cliArgParser = new ArgParser()
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.')
-    ..addFlag('version', abbr: 'v', help: 'Shows the version information', negatable: false)
+    ..addFlag('version', abbr: 'v', help: 'Shows the version information of git revision', negatable: false)
     ..addOption('context',
         abbr: 'C', help: '<path> Run as if git was started in <path> instead of the current working directory')
-    ..addOption('baseBranch', abbr: 'b', help: 'baseBranch', defaultsTo: GitVersioner.DEFAULT_BRANCH.toString())
+    ..addOption('baseBranch', abbr: 'b', help: 'The base branch where most of the development happens. Often what is set as baseBranch in github. Only on the baseBranch the revision can become only digits.', defaultsTo: GitVersioner.DEFAULT_BRANCH.toString())
     ..addOption('yearFactor',
-        abbr: 'y', help: 'increment count per year', defaultsTo: GitVersioner.DEFAULT_YEAR_FACTOR.toString())
+        abbr: 'y', help: 'revision increment count per year', defaultsTo: GitVersioner.DEFAULT_YEAR_FACTOR.toString())
     ..addOption(
       'stopDebounce',
       abbr: 'd',
@@ -73,7 +73,7 @@ class CliApp {
           'A project on hold for a few months will therefore not increase the revision drastically when development '
           'starts again.',
     )
-    ..addFlag('full', help: 'shows full information about the current revision and the calculations');
+    ..addFlag('full', help: 'shows full information about the current revision and extracted information', negatable: false);
 
   static GitRevisionCliArgs parseCliArgs(List<String> args) {
     ArgResults argResults = _cliArgParser.parse(args);
