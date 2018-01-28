@@ -218,7 +218,8 @@ void main() {
     });
 
     test('shows intro text', () async {
-      expect(output.messages.join(), startsWith("git revision creates a useful revision for your project beyond 'git describe'"));
+      expect(output.messages.join(),
+          startsWith("git revision creates a useful revision for your project beyond 'git describe'"));
     });
 
     test('shows usage information', () async {
@@ -240,7 +241,6 @@ void main() {
     setUp(() async {
       output = await gitRevision("--version");
     });
-
 
     test('shows version number', () async {
       expect(output.messages, hasLength(1));
@@ -286,7 +286,7 @@ void main() {
     setUp(() async {
       logger = new MockLogger();
 
-      app = new CliApp(logger, (config){
+      app = new CliApp(logger, (config) {
         versioner = new MockGitVersioner();
         when(versioner.config).thenReturn(config);
         when(versioner.revision).thenReturn(new Future.value('432'));
@@ -356,7 +356,7 @@ void main() {
     });
 
     test('requires gitVersioner', () async {
-      app = new CliApp(new MockLogger(), (_)=>null);
+      app = new CliApp(new MockLogger(), (_) => null);
       try {
         await app.process([]);
       } on AssertionError catch (e) {
@@ -376,7 +376,6 @@ void main() {
   });
 }
 
-
 Future<MockLogger> gitRevision(String args) async {
   var logger = new MockLogger();
   var app = new CliApp.production(logger);
@@ -385,7 +384,6 @@ Future<MockLogger> gitRevision(String args) async {
 
   return logger;
 }
-
 
 class MockGitVersioner extends Mock implements GitVersioner {}
 
@@ -402,15 +400,13 @@ class MockLogger extends CliLogger {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is MockLogger &&
-              runtimeType == other.runtimeType &&
-              const IterableEquality().equals(messages,other.messages) &&
-              const IterableEquality().equals(errors,other.errors);
+      other is MockLogger &&
+          runtimeType == other.runtimeType &&
+          const IterableEquality().equals(messages, other.messages) &&
+          const IterableEquality().equals(errors, other.errors);
 
   @override
-  int get hashCode =>
-      const IterableEquality().hash(messages) ^
-      const IterableEquality().hash(errors);
+  int get hashCode => const IterableEquality().hash(messages) ^ const IterableEquality().hash(errors);
 
   @override
   String toString() {

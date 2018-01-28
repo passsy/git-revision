@@ -14,10 +14,7 @@ class Commit {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-          other is Commit &&
-              runtimeType == other.runtimeType &&
-              sha1 == other.sha1;
+      identical(this, other) || other is Commit && runtimeType == other.runtimeType && sha1 == other.sha1;
 
   @override
   int get hashCode => sha1.hashCode;

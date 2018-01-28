@@ -9,6 +9,7 @@ class GitVersionerConfig {
   String repoPath;
   int yearFactor;
   int stopDebounce;
+
   /// The revision for which the version should be calculated
   String rev;
 
@@ -70,7 +71,7 @@ class GitVersioner {
   }
 
   Future<LocalChanges> get localChanges async {
-    if(config.rev != 'HEAD') {
+    if (config.rev != 'HEAD') {
       // local changes are only interesting for HEAD during active development
       return LocalChanges.NONE;
     }
