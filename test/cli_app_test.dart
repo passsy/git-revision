@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:git_revision/cli_app.dart';
 import 'package:git_revision/git/git_commands.dart';
 import 'package:git_revision/git_revision.dart';
@@ -210,55 +211,69 @@ void main() {
   });
 
   group('--help', () {
-    MockLogger logger;
-    CliApp app;
+    MockLogger output;
 
     setUp(() async {
-      logger = new MockLogger();
-      app = new CliApp(logger);
-      await app.process(['--help']);
+      output = await gitRevision("--help");
     });
 
     test('shows intro text', () async {
-      expect(logger.messages.join(), startsWith('Welcome to git revision'));
+      expect(output.messages.join(), startsWith("git revision creates a useful revision for your project beyond 'git describe'"));
     });
 
     test('shows usage information', () async {
-      var usageMessage = logger.messages.join();
+      var usageMessage = output.messages.join();
       expect(usageMessage, contains('--help'));
       expect(usageMessage, contains('--version'));
     });
 
     test('all fields are filled', () async {
-      for (var msg in logger.messages) {
+      for (var msg in output.messages) {
         expect(msg, isNot(contains('null')));
       }
     });
   });
 
   group('--version', () {
-    MockLogger logger;
-    CliApp app;
+    MockLogger output;
 
     setUp(() async {
-      logger = new MockLogger();
-      app = new CliApp(logger);
-      await app.process(['--version']);
+      output = await gitRevision("--version");
     });
 
+
     test('shows version number', () async {
-      expect(logger.messages, hasLength(1));
-      expect(logger.messages[0], contains('Version'));
+      expect(output.messages, hasLength(1));
+      expect(output.messages[0], contains('Version'));
 
       // contains a semantic version string (simplified)
       var semanticVersion = new RegExp(r'.*\d{1,3}\.\d{1,3}\.\d{1,3}.*');
-      expect(semanticVersion.hasMatch(logger.messages[0]), true);
+      expect(semanticVersion.hasMatch(output.messages[0]), true);
     });
 
     test('all fields are filled', () async {
-      for (var msg in logger.messages) {
+      for (var msg in output.messages) {
         expect(msg, isNot(contains('null')));
       }
+    });
+  });
+  group('global args order', () {
+    test('--help outranks --version', () async {
+      var version = await gitRevision("--help");
+      var both = await gitRevision("--version --help");
+      expect(both, equals(version));
+    });
+
+    test('--help outranks revision', () async {
+      var version = await gitRevision("--help");
+      var both = await gitRevision("HEAD --help");
+      expect(both, equals(version));
+    });
+
+    test('--version outranks revision', () async {
+      var version = await gitRevision("--version");
+      var both = await gitRevision("HEAD --version");
+      expect(both, equals(version));
     });
   });
 
@@ -270,22 +285,25 @@ void main() {
 
     setUp(() async {
       logger = new MockLogger();
-      versioner = new MockGitVersioner();
-      when(versioner.config).thenReturn(new GitVersionerConfig("baseBranch", "/path/to/repo", 20000, 96, "randomRev"));
-      when(versioner.revision).thenReturn(new Future.value('432'));
-      when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
-      when(versioner.branchName).thenReturn(new Future.value('myBranch'));
-      when(versioner.sha1).thenReturn(new Future.value('1234567'));
-      when(versioner.firstBaseBranchCommits).thenReturn(new Future.value(_commits(152)));
-      when(versioner.baseBranchCommits).thenReturn(new Future.value(_commits(377)));
-      when(versioner.baseBranchTimeComponent).thenReturn(new Future.value('773'));
-      when(versioner.featureBranchCommits).thenReturn(new Future.value(_commits(677)));
-      when(versioner.featureBranchTimeComponent).thenReturn(new Future.value('776'));
-      when(versioner.featureBranchOrigin).thenReturn(new Future.value(new Commit('featureBranchOrigin', null)));
 
-      app = new CliApp(logger);
-      //app.versionerProvider = (config) => versioner;
-      await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf']);
+      app = new CliApp(logger, (config){
+        versioner = new MockGitVersioner();
+        when(versioner.config).thenReturn(config);
+        when(versioner.revision).thenReturn(new Future.value('432'));
+        when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
+        when(versioner.branchName).thenReturn(new Future.value('myBranch'));
+        when(versioner.baseBranch).thenReturn(new Future.value('baseBranch'));
+        when(versioner.sha1).thenReturn(new Future.value('1234567'));
+        when(versioner.firstBaseBranchCommits).thenReturn(new Future.value(_commits(152)));
+        when(versioner.baseBranchCommits).thenReturn(new Future.value(_commits(377)));
+        when(versioner.baseBranchTimeComponent).thenReturn(new Future.value('773'));
+        when(versioner.featureBranchCommits).thenReturn(new Future.value(_commits(677)));
+        when(versioner.featureBranchTimeComponent).thenReturn(new Future.value('776'));
+        when(versioner.featureBranchOrigin).thenReturn(new Future.value(new Commit('featureBranchOrigin', null)));
+        when(versioner.commits).thenReturn(new Future.value(_commits(432)));
+        return versioner;
+      });
+      await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf', '--full']);
       log = logger.messages.join('\n');
     });
 
@@ -338,11 +356,11 @@ void main() {
     });
 
     test('requires gitVersioner', () async {
-      app = new CliApp(new MockLogger());
+      app = new CliApp(new MockLogger(), (_)=>null);
       try {
         await app.process([]);
-      } on ArgumentError catch (e) {
-        expect(e.toString(), contains('gitVersioner'));
+      } on AssertionError catch (e) {
+        expect(e.toString(), contains('versioner != null'));
       }
     });
   });
@@ -350,13 +368,24 @@ void main() {
   group('construct app', () {
     test("logger can't be null", () {
       try {
-        new CliApp(null);
+        new CliApp(null, null);
       } on AssertionError catch (e) {
         expect(e.toString(), contains('logger != null'));
       }
     });
   });
 }
+
+
+Future<MockLogger> gitRevision(String args) async {
+  var logger = new MockLogger();
+  var app = new CliApp.production(logger);
+
+  await app.process(args.split(' '));
+
+  return logger;
+}
+
 
 class MockGitVersioner extends Mock implements GitVersioner {}
 
@@ -369,6 +398,24 @@ class MockLogger extends CliLogger {
 
   @override
   void stdErr(String s) => errors.add(s);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+          other is MockLogger &&
+              runtimeType == other.runtimeType &&
+              const IterableEquality().equals(messages,other.messages) &&
+              const IterableEquality().equals(errors,other.errors);
+
+  @override
+  int get hashCode =>
+      const IterableEquality().hash(messages) ^
+      const IterableEquality().hash(errors);
+
+  @override
+  String toString() {
+    return 'MockLogger{messages: $messages, errors: $errors}';
+  }
 }
 
 List<Commit> _commits(int count) {

@@ -4,12 +4,17 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:git_revision/git_revision.dart';
 
+typedef GitVersioner GitVersionerProvider(GitVersionerConfig config);
+
 class CliApp {
   final CliLogger logger;
 
-  CliApp(this.logger) : assert(logger != null);
+  // manual injection of the [GitVersioner]
+  final GitVersionerProvider versionerProvider;
 
-  CliApp.production([CliLogger logger = const CliLogger()]) : this(logger);
+  CliApp(this.logger, this.versionerProvider) : assert(logger != null), assert(versionerProvider != null);
+
+  CliApp.production([CliLogger logger = const CliLogger()]) : this(logger, (config) => new GitVersioner(config));
 
   Future<Null> process(List<String> args) async {
     final cliArgs = parseCliArgs(args);
@@ -25,7 +30,8 @@ class CliApp {
       return;
     }
 
-    var versioner = new GitVersioner(cliArgs.toConfig());
+    var versioner = versionerProvider(cliArgs.toConfig());
+    assert(versioner != null);
 
     if (cliArgs.fullOutput) {
       logger.stdOut(trimLines('''
@@ -103,6 +109,7 @@ class CliApp {
   }
 
   void showUsage() {
+    logger.stdOut("git revision creates a useful revision for your project beyond 'git describe'");
     logger.stdOut(_cliArgParser.usage);
   }
 
