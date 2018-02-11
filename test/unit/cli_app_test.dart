@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:git_revision/cli_app.dart';
-import 'package:git_revision/git/git_commands.dart';
+import 'package:git_revision/git/commit.dart';
+import 'package:git_revision/git/local_changes.dart';
 import 'package:git_revision/git_revision.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
