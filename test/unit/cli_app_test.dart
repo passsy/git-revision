@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:git_revision/cli_app.dart';
 import 'package:git_revision/git/git_commands.dart';
 import 'package:git_revision/git_revision.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
+
+import 'util/memory_logger.dart';
 
 void main() {
   group('parse args', () {
@@ -211,10 +212,10 @@ void main() {
   });
 
   group('--help', () {
-    MockLogger output;
+    MemoryLogger output;
 
     setUp(() async {
-      output = await gitRevision("--help");
+      output = await _gitRevision("--help");
     });
 
     test('shows intro text', () async {
@@ -236,10 +237,10 @@ void main() {
   });
 
   group('--version', () {
-    MockLogger output;
+    MemoryLogger output;
 
     setUp(() async {
-      output = await gitRevision("--version");
+      output = await _gitRevision("--version");
     });
 
     test('shows version number', () async {
@@ -259,35 +260,35 @@ void main() {
   });
   group('global args order', () {
     test('--help outranks --version', () async {
-      var version = await gitRevision("--help");
-      var both = await gitRevision("--version --help");
+      var version = await _gitRevision("--help");
+      var both = await _gitRevision("--version --help");
       expect(both, equals(version));
     });
 
     test('--help outranks revision', () async {
-      var version = await gitRevision("--help");
-      var both = await gitRevision("HEAD --help");
+      var version = await _gitRevision("--help");
+      var both = await _gitRevision("HEAD --help");
       expect(both, equals(version));
     });
 
     test('--version outranks revision', () async {
-      var version = await gitRevision("--version");
-      var both = await gitRevision("HEAD --version");
+      var version = await _gitRevision("--version");
+      var both = await _gitRevision("HEAD --version");
       expect(both, equals(version));
     });
   });
 
   group('--full', () {
-    MockLogger logger;
+    MemoryLogger logger;
     CliApp app;
     GitVersioner versioner;
     String log;
 
     setUp(() async {
-      logger = new MockLogger();
+      logger = new MemoryLogger();
 
       app = new CliApp(logger, (config) {
-        versioner = new MockGitVersioner();
+        versioner = new _MockGitVersioner();
         when(versioner.config).thenReturn(config);
         when(versioner.revision).thenReturn(new Future.value('432'));
         when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
@@ -362,7 +363,7 @@ void main() {
     });
 
     test('requires gitVersioner', () async {
-      app = new CliApp(new MockLogger(), (_) => null);
+      app = new CliApp(new MemoryLogger(), (_) => null);
       try {
         await app.process([]);
       } on AssertionError catch (e) {
@@ -382,8 +383,8 @@ void main() {
   });
 }
 
-Future<MockLogger> gitRevision(String args) async {
-  var logger = new MockLogger();
+Future<MemoryLogger> _gitRevision(String args) async {
+  var logger = new MemoryLogger();
   // creates CliApp without revision part
   var app = new CliApp(logger, (_) => null);
 
@@ -392,34 +393,7 @@ Future<MockLogger> gitRevision(String args) async {
   return logger;
 }
 
-class MockGitVersioner extends Mock implements GitVersioner {}
-
-class MockLogger extends CliLogger {
-  List<String> messages = [];
-  List<String> errors = [];
-
-  @override
-  void stdOut(String s) => messages.add(s);
-
-  @override
-  void stdErr(String s) => errors.add(s);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is MockLogger &&
-          runtimeType == other.runtimeType &&
-          const IterableEquality().equals(messages, other.messages) &&
-          const IterableEquality().equals(errors, other.errors);
-
-  @override
-  int get hashCode => const IterableEquality().hash(messages) ^ const IterableEquality().hash(errors);
-
-  @override
-  String toString() {
-    return 'MockLogger{messages: $messages, errors: $errors}';
-  }
-}
+class _MockGitVersioner extends Mock implements GitVersioner {}
 
 List<Commit> _commits(int count) {
   var now = new DateTime.now();
