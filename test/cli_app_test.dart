@@ -277,7 +277,7 @@ void main() {
     });
   });
 
-  group('revision', () {
+  group('--full', () {
     MockLogger logger;
     CliApp app;
     GitVersioner versioner;
@@ -371,7 +371,7 @@ void main() {
     });
   });
 
-  group('construct app', () {
+  group('initialize cli app', () {
     test("logger can't be null", () {
       try {
         new CliApp(null, null);
@@ -384,7 +384,8 @@ void main() {
 
 Future<MockLogger> gitRevision(String args) async {
   var logger = new MockLogger();
-  var app = new CliApp.production(logger);
+  // creates CliApp without revision part
+  var app = new CliApp(logger, (_) => null);
 
   await app.process(args.split(' '));
 
