@@ -144,7 +144,7 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 3_featureB+2\n'));
+      expect(out, contains('versionName: 3_featureB+2_7f1417d\n'));
 
       await git.run(name: 'continue work on master and merge featureB', script: sh("""
           git checkout master
@@ -160,7 +160,7 @@ void main() {
 
       // back on featureB the previous output should not change
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 3_featureB+2\n'));
+      expect(out2, contains('versionName: 3_featureB+2_7f1417d\n'));
     });
 
     test("git flow - baseBranch=develop - merge develop -> master increases revision", () async {
@@ -231,7 +231,7 @@ void main() {
       // master should be only +2 ahead which are the two merge commits (develop -> master)
       // master will always +1 ahead of develop even when merging (master -> develop)
       var out2 = await git.revision(['--full', '--baseBranch', 'develop']);
-      expect(out2, contains('versionName: 17_master+2\n'));
+      expect(out2, contains('versionName: 17_master+2_cdd5b32\n'));
     });
   });
 
@@ -266,14 +266,14 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 2_featureB+2\n'));
+      expect(out, contains('versionName: 2_featureB+2_e121797\n'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 2_featureB+2\n'));
+      expect(out2, contains('versionName: 2_featureB+2_e121797\n'));
     });
 
     test("master only on remote which is not called origin", () async {
@@ -300,14 +300,14 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 2_featureB+2\n'));
+      expect(out, contains('versionName: 2_featureB+2_e121797\n'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 2_featureB+2\n'));
+      expect(out2, contains('versionName: 2_featureB+2_e121797\n'));
     });
 
     test("master only on one remote - multiple remotes", () async {
@@ -338,14 +338,14 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 2_featureB+1\n'));
+      expect(out, contains('versionName: 2_featureB+1_4bc04e2'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 2_featureB+1\n'));
+      expect(out2, contains('versionName: 2_featureB+1_4bc04e2\n'));
     });
   });
 }

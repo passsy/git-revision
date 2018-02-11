@@ -301,6 +301,7 @@ void main() {
         when(versioner.featureBranchTimeComponent).thenReturn(new Future.value('776'));
         when(versioner.featureBranchOrigin).thenReturn(new Future.value(new Commit('featureBranchOrigin', null)));
         when(versioner.commits).thenReturn(new Future.value(_commits(432)));
+        when(versioner.localChanges).thenReturn(new Future.value(const LocalChanges(4, 5, 6)));
         return versioner;
       });
       await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf', '--full']);
@@ -351,7 +352,12 @@ void main() {
       expect(log, contains('776'));
     });
 
+    test('shows local changes', () async {
+      expect(log, contains('4 +5 -6'));
+    });
+
     test('all fields are filled', () async {
+      // detects new added fields which aren't mocked
       expect(log, isNot(contains('null')));
     });
 
