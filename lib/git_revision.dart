@@ -68,7 +68,7 @@ class GitVersioner {
         name = "_${config.name}";
       }
 
-      var furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
+      var furtherPart = name.isNotEmpty ? "+${additionalCommits.length}" : '';
       var dirtyPart = (changes == LocalChanges.NONE) ? '' : '-dirty';
 
       return "$rev$name${furtherPart}_$hash$dirtyPart";
