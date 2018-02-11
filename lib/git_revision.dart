@@ -97,8 +97,8 @@ class GitVersioner {
       var branch = await headBranchName;
       var changes = await localChanges;
 
-      String name;
-      if (branch != null) {
+      String name = '';
+      if (branch != null && branch != config.baseBranch) {
         name = branch != null ? "_$branch" : '';
       }
       if (config.name != null && config.name != config.baseBranch) {
