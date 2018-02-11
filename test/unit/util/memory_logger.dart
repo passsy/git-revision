@@ -15,10 +15,10 @@ class MemoryLogger extends CliLogger {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is MemoryLogger &&
-              runtimeType == other.runtimeType &&
-              const IterableEquality().equals(messages, other.messages) &&
-              const IterableEquality().equals(errors, other.errors);
+      other is MemoryLogger &&
+          runtimeType == other.runtimeType &&
+          const IterableEquality().equals(messages, other.messages) &&
+          const IterableEquality().equals(errors, other.errors);
 
   @override
   int get hashCode => const IterableEquality().hash(messages) ^ const IterableEquality().hash(errors);

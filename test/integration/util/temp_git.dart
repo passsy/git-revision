@@ -7,7 +7,6 @@ import 'package:test/test.dart';
 
 import '../../unit/util/memory_logger.dart';
 
-
 class TempGit {
   /// set to `true` for debugging to skip deletion of the repo folder
   ///
