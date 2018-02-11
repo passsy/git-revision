@@ -14,7 +14,7 @@ class GitVersionerConfig {
   /// The revision for which the version should be calculated
   String rev;
 
-  GitVersionerConfig(this.baseBranch, this.repoPath, this.yearFactor, this.stopDebounce, this.rev)
+  GitVersionerConfig(this.baseBranch, this.repoPath, this.yearFactor, this.stopDebounce, this.name, this.rev)
       : assert(baseBranch != null),
         assert(yearFactor >= 0),
         assert(stopDebounce >= 0),
@@ -97,11 +97,18 @@ class GitVersioner {
       var branch = await headBranchName;
       var changes = await localChanges;
 
-      var branchPart = branch != null ? "_$branch" : '';
+      String name;
+      if (branch != null) {
+        name = branch != null ? "_$branch" : '';
+      }
+      if (config.name != null && config.name != config.baseBranch) {
+        name = "_${config.name}";
+      }
+
       var furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
       var dirtyPart = (changes == LocalChanges.NONE) ? '' : '-dirty';
 
-      return "$rev$branchPart${furtherPart}_$hash$dirtyPart";
+      return "$rev$name${furtherPart}_$hash$dirtyPart";
     } else {
       var furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
       String name = '';

@@ -80,6 +80,11 @@ class CliApp {
           'A project on hold for a few months will therefore not increase the revision drastically when development '
           'starts again.',
     )
+    ..addOption('name',
+        abbr: 'n',
+        help: "a human readable name and identifier of a revision ('73_<name>+21_996321c'). "
+            "Can be anything which gives the revision more meaning i.e. the number of the PullRequest when building on CI. "
+            "Allowed characters: [a-zA-Z0-9_\-\/] any letter, digits, underscore, dash and slash. Invalid characters will be removed.")
     ..addFlag('full',
         help: 'shows full information about the current revision and extracted information', negatable: false);
 
@@ -102,6 +107,24 @@ class CliApp {
       }
     } else if (argResults.rest.length > 1) {
       throw new ArgError('expected only one revision argument, found ${argResults.rest.length}: ${argResults.rest}');
+    }
+
+    final String rawName = argResults['name'];
+    if (rawName != null) {
+      // replace illegal chars with underscore
+      String safeName = rawName.replaceAll(new RegExp(r'[^\w_\-\/]+'), '_').replaceAll('__', '_');
+
+      // trim underscore at start and end
+      if (safeName[0] == '_') {
+        safeName = safeName.substring(1, safeName.length - 1);
+      }
+      if (safeName[safeName.length - 1] == '_') {
+        safeName = safeName.substring(0, safeName.length - 2);
+      }
+
+      if (safeName.isNotEmpty && safeName != '_') {
+        parsedCliArgs.name = safeName;
+      }
     }
 
     return parsedCliArgs;
@@ -134,6 +157,7 @@ class GitRevisionCliArgs {
 
   String repoPath;
   String revision = 'HEAD';
+  String name;
   String baseBranch = GitVersioner.DEFAULT_BRANCH;
   int yearFactor = GitVersioner.DEFAULT_YEAR_FACTOR;
   int stopDebounce = GitVersioner.DEFAULT_STOP_DEBOUNCE;
@@ -144,7 +168,8 @@ class GitRevisionCliArgs {
   String toString() =>
       'GitRevisionCliArgs{helpFlag: $showHelp, versionFlag: $showVersion, baseBranch: $baseBranch, repoPath: $repoPath, yearFactor: $yearFactor, stopDebounce: $stopDebounce}';
 
-  GitVersionerConfig toConfig() => new GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, revision);
+  GitVersionerConfig toConfig() =>
+      new GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, name, revision);
 
   @override
   bool operator ==(Object other) =>
@@ -153,22 +178,24 @@ class GitRevisionCliArgs {
           runtimeType == other.runtimeType &&
           showHelp == other.showHelp &&
           showVersion == other.showVersion &&
-          baseBranch == other.baseBranch &&
           repoPath == other.repoPath &&
+          revision == other.revision &&
+          name == other.name &&
+          baseBranch == other.baseBranch &&
           yearFactor == other.yearFactor &&
           stopDebounce == other.stopDebounce &&
-          revision == other.revision &&
           fullOutput == other.fullOutput;
 
   @override
   int get hashCode =>
       showHelp.hashCode ^
       showVersion.hashCode ^
-      baseBranch.hashCode ^
       repoPath.hashCode ^
+      revision.hashCode ^
+      name.hashCode ^
+      baseBranch.hashCode ^
       yearFactor.hashCode ^
       stopDebounce.hashCode ^
-      revision.hashCode ^
       fullOutput.hashCode;
 }
 
