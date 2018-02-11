@@ -9,6 +9,7 @@ class GitVersionerConfig {
   String repoPath;
   int yearFactor;
   int stopDebounce;
+  String name;
 
   /// The revision for which the version should be calculated
   String rev;
@@ -28,11 +29,17 @@ class GitVersionerConfig {
           repoPath == other.repoPath &&
           yearFactor == other.yearFactor &&
           stopDebounce == other.stopDebounce &&
+          name == other.name &&
           rev == other.rev;
 
   @override
   int get hashCode =>
-      baseBranch.hashCode ^ repoPath.hashCode ^ yearFactor.hashCode ^ stopDebounce.hashCode ^ rev.hashCode;
+      baseBranch.hashCode ^
+      repoPath.hashCode ^
+      yearFactor.hashCode ^
+      stopDebounce.hashCode ^
+      name.hashCode ^
+      rev.hashCode;
 }
 
 const Duration _YEAR = const Duration(days: 365);
@@ -83,20 +90,35 @@ class GitVersioner {
   // TODO swap name with revision
   Future<String> get versionName async {
     var rev = await revision;
-    var branch = await branchName ?? await sha1;
-    var changes = await localChanges;
-    var dirty = (changes == LocalChanges.NONE) ? '' : '-dirty';
+    var hash = (await sha1).substring(0, 7);
+    var additionalCommits = await featureBranchCommits;
 
-    if (branch == config.baseBranch) {
-      return "$rev$dirty";
+    if (config.rev == 'HEAD') {
+      var branch = await headBranchName;
+      var changes = await localChanges;
+
+      var branchPart = branch != null ? "_$branch" : '';
+      var furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
+      var dirtyPart = (changes == LocalChanges.NONE) ? '' : '-dirty';
+
+      return "$rev$branchPart${furtherPart}_$hash$dirtyPart";
     } else {
-      var additionalCommits = await featureBranchCommits;
-      return "${rev}_$branch+${additionalCommits.length}$dirty";
+      var furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
+      String name = '';
+
+      if (!hash.startsWith(config.rev) && config.rev != config.baseBranch) {
+        name = "_${config.rev}";
+      }
+      if (config.name != null && config.name != config.baseBranch) {
+        name = "_${config.name}";
+      }
+
+      return "$rev$name${furtherPart}_$hash";
     }
   }
 
-  Future<String> get branchName async {
-    var name = await git('symbolic-ref --short -q ${config.rev}', onErrorNull: true, emptyResultIsError: false);
+  Future<String> get headBranchName async {
+    var name = await git('symbolic-ref --short -q HEAD', onErrorNull: true, emptyResultIsError: false);
     if (name == null) return null;
 
     // empty branch names can't exits this means no branch name
@@ -324,7 +346,8 @@ class _CachedGitVersioner extends GitVersioner {
   Future<String> get sha1 => cache(() => super.sha1, 'rev-parse ${config.rev}', io: true);
 
   @override
-  Future<String> get branchName => cache(() => super.branchName, 'symbolic-ref --short -q ${config.rev}', io: true);
+  Future<String> get headBranchName =>
+      cache(() => super.headBranchName, 'symbolic-ref --short -q ${config.rev}', io: true);
 
   @override
   Future<String> get versionName => cache(() => super.versionName, 'versionName');

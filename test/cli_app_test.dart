@@ -291,7 +291,7 @@ void main() {
         when(versioner.config).thenReturn(config);
         when(versioner.revision).thenReturn(new Future.value('432'));
         when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
-        when(versioner.branchName).thenReturn(new Future.value('myBranch'));
+        when(versioner.headBranchName).thenReturn(new Future.value('myBranch'));
         when(versioner.baseBranch).thenReturn(new Future.value('baseBranch'));
         when(versioner.sha1).thenReturn(new Future.value('1234567'));
         when(versioner.firstBaseBranchCommits).thenReturn(new Future.value(_commits(152)));

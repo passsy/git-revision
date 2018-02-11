@@ -40,7 +40,7 @@ class CliApp {
         versionCode: ${await versioner.revision}
         versionName: ${await versioner.versionName}
         baseBranch: ${versioner.config.baseBranch}
-        currentBranch: ${await versioner.branchName}
+        currentBranch: ${await versioner.headBranchName}
         sha1: ${await versioner.sha1}
         sha1Short: ${(await versioner.sha1).substring(0, 7)}
         baseBranchCommitCount first-only: ${(await versioner.firstBaseBranchCommits).length}
@@ -50,6 +50,7 @@ class CliApp {
         featureBranchTimeComponent: ${(await versioner.featureBranchTimeComponent)}
         featureOrigin: ${(await versioner.featureBranchOrigin).sha1}
         yearFactor: ${versioner.config.yearFactor}
+        localChanges: ${await versioner.localChanges}
         '''));
     } else {
       // default output

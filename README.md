@@ -6,13 +6,13 @@ Work in progress...
 
 ```
 > git revision
-73_feature/user_profile+0-dirty
+73_feature/user_profile+0_996321c-dirty
 ```
 
 ```
 > git revision --full
 versionCode: 73
-versionName: 73_feature/user_profile+0-dirty
+versionName: 73_feature/user_profile+0_996321c-dirty
 baseBranch: master
 currentBranch: feature/user_profile
 sha1: 996321c8a38c0cd0c9ebeb4e9f82615796005202
@@ -24,8 +24,37 @@ featureBranchCommitCount: 0
 featureBranchTimeComponent: 0
 featureOrigin: 996321c8a38c0cd0c9ebeb4e9f82615796005202
 yearFactor: 1000
+localChanges: 4 +35 -12
+```
+
+### Possible revisions
+
+#### Examples
 
 ```
+1_a541234
+
+1235+1_1234567
+
+432+43_a342123-dirty
+
+1234_someBranch+43_3423123
+
+1234_someBranch+43_3423123-dirty
+
+1234_feature/topic_branch-something1234_cool+43_3423123-dirty
+
+1234_topic_branch_name+0_3423123-dirty
+```
+
+#### Schema
+
+Regex matching any possible revision (above)
+
+```
+(\d+)(?>_([\w_\-\/]+))?(?>\+(\d+))?_([0-9a-f]{7})(-dirty)?
+```
+
 
 ### Help
 
