@@ -4,44 +4,6 @@ import 'dart:io';
 import 'package:git_revision/git/git_commands.dart';
 import 'package:git_revision/util/process_utils.dart';
 
-class GitVersionerConfig {
-  String baseBranch;
-  String repoPath;
-  int yearFactor;
-  int stopDebounce;
-  String name;
-
-  /// The revision for which the version should be calculated
-  String rev;
-
-  GitVersionerConfig(this.baseBranch, this.repoPath, this.yearFactor, this.stopDebounce, this.name, this.rev)
-      : assert(baseBranch != null),
-        assert(yearFactor >= 0),
-        assert(stopDebounce >= 0),
-        assert(rev != null && rev.isNotEmpty);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is GitVersionerConfig &&
-          runtimeType == other.runtimeType &&
-          baseBranch == other.baseBranch &&
-          repoPath == other.repoPath &&
-          yearFactor == other.yearFactor &&
-          stopDebounce == other.stopDebounce &&
-          name == other.name &&
-          rev == other.rev;
-
-  @override
-  int get hashCode =>
-      baseBranch.hashCode ^
-      repoPath.hashCode ^
-      yearFactor.hashCode ^
-      stopDebounce.hashCode ^
-      name.hashCode ^
-      rev.hashCode;
-}
-
 const Duration _YEAR = const Duration(days: 365);
 
 class GitVersioner {
@@ -376,4 +338,42 @@ class _CachedGitVersioner extends GitVersioner {
 
   @override
   Future<Commit> get featureBranchOrigin => cache(() => super.featureBranchOrigin, 'featureBranchOrigin');
+}
+
+class GitVersionerConfig {
+  String baseBranch;
+  String repoPath;
+  int yearFactor;
+  int stopDebounce;
+  String name;
+
+  /// The revision for which the version should be calculated
+  String rev;
+
+  GitVersionerConfig(this.baseBranch, this.repoPath, this.yearFactor, this.stopDebounce, this.name, this.rev)
+      : assert(baseBranch != null),
+        assert(yearFactor >= 0),
+        assert(stopDebounce >= 0),
+        assert(rev != null && rev.isNotEmpty);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GitVersionerConfig &&
+          runtimeType == other.runtimeType &&
+          baseBranch == other.baseBranch &&
+          repoPath == other.repoPath &&
+          yearFactor == other.yearFactor &&
+          stopDebounce == other.stopDebounce &&
+          name == other.name &&
+          rev == other.rev;
+
+  @override
+  int get hashCode =>
+      baseBranch.hashCode ^
+      repoPath.hashCode ^
+      yearFactor.hashCode ^
+      stopDebounce.hashCode ^
+      name.hashCode ^
+      rev.hashCode;
 }
