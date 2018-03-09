@@ -14,6 +14,30 @@ void main() {
       git = await makeTempGit();
     });
 
+    test('no git', () async {
+      await git.run(name: 'init commit', script: sh("""
+          echo 'Hello World' > a.txt
+          """));
+
+      var out = await git.revision(['--full']);
+
+      expect(out, contains('versionCode: 0\n'));
+      expect(out, contains('versionName: 0_0000000-dirty\n'));
+      expect(out, contains('baseBranch: master\n'));
+      expect(out, contains('currentBranch: null\n'));
+      expect(out, contains('sha1: null\n'));
+      expect(out, contains('sha1Short: null\n'));
+      expect(out, contains('baseBranchCommitCount first-only: 0\n'));
+      expect(out, contains('baseBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('baseBranchTimeComponent: 0\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchTimeComponent: 0\n'));
+      expect(out, contains('featureOrigin: null\n'));
+      expect(out, contains('yearFactor: 1000\n'));
+      expect(out, contains('localChanges: null'));
+    });
+
     test('no commmit', () async {
       await git.run(name: 'init commit', script: sh("""
           git init
@@ -39,7 +63,7 @@ void main() {
       expect(out, contains('localChanges: null'));
     });
   });
-  
+
   group('master only', () {
     TempGit git;
     setUp(() async {

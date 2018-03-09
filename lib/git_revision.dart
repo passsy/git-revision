@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:git_revision/git/commit.dart';
 import 'package:git_revision/git/local_changes.dart';
-import 'package:git_revision/util/process_utils.dart';
 
 const Duration _YEAR = const Duration(days: 365);
 
@@ -27,10 +26,14 @@ class GitVersioner {
     return commits.length + timeComponent;
   }
 
-  Future<String> git(String args, {bool onErrorNull = false, bool emptyResultIsError = true}) async {
+  Future<String> git(String args, {bool emptyResultIsError = true}) async {
     var argList = args.split(' ');
-    var stdoutFunction = onErrorNull ? stdoutTextOrNull : stdoutText;
-    var text = stdoutFunction(await Process.run('git', argList, workingDirectory: config?.repoPath));
+
+    final processResult = await Process.run('git', argList, workingDirectory: config?.repoPath);
+    if (processResult.exitCode != 0) {
+      return null;
+    }
+    var text = processResult.stdout as String;
     text = text?.trim();
     if (emptyResultIsError) {
       if (text == null || text.isEmpty) {
@@ -46,18 +49,9 @@ class GitVersioner {
       return LocalChanges.NONE;
     }
 
-    try {
-      var changes = await git('diff --shortstat HEAD', emptyResultIsError: false);
-      return _parseDiffShortStat(changes);
-    } catch (ex, stack) {
-      print(ex);
-      if (ex.message?.contains("ambiguous argument 'HEAD'")) {
-        // no commits, no HEAD
-        return null;
-      } else {
-        throw ex;
-      }
-    }
+    var changes = await git('diff --shortstat HEAD', emptyResultIsError: false);
+    if (changes == null) return null;
+    return _parseDiffShortStat(changes);
   }
 
   // TODO swap name with revision
@@ -97,7 +91,7 @@ class GitVersioner {
   }
 
   Future<String> get headBranchName async {
-    var name = await git('symbolic-ref --short -q HEAD', onErrorNull: true, emptyResultIsError: false);
+    var name = await git('symbolic-ref --short -q HEAD', emptyResultIsError: false);
     if (name == null) return null;
 
     // empty branch names can't exits this means no branch name
@@ -112,18 +106,17 @@ class GitVersioner {
 
   /// full Sha1 or `null`
   Future<String> get sha1 async {
-    try {
-      var hash = await git('rev-parse ${config.rev}');
-      assert(() {
-        if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
-        if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
-        return true;
-      }());
-
-      return hash;
-    } catch (ex, stack) {
+    var hash = await git('rev-parse ${config.rev}', emptyResultIsError: false);
+    if (hash == null) {
       return null;
     }
+    assert(() {
+      if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
+      if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
+      return true;
+    }());
+
+    return hash;
   }
 
   /// All first-parent commits in baseBranch
@@ -180,17 +173,15 @@ class GitVersioner {
 
   /// runs `git rev-list $rev` and returns the commits in order new -> old
   Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) async {
-    try {
-      // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-      String result = await git('rev-list --pretty=%cI%n${firstParentOnly ? ' --first-parent' : ''} $rev',
-          emptyResultIsError: false);
-      return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
-        var lines = rawCommit.split('\n');
-        return new Commit(lines[0].replaceFirst('commit ', ''), lines[1]);
-      }).toList(growable: false);
-    } catch (ex, stack) {
-      return [];
-    }
+    // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
+    String result =
+        await git('rev-list --pretty=%cI%n${firstParentOnly ? ' --first-parent' : ''} $rev', emptyResultIsError: false);
+    if (result == null) return [];
+
+    return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
+      var lines = rawCommit.split('\n');
+      return new Commit(lines[0].replaceFirst('commit ', ''), lines[1]);
+    }).toList(growable: false);
   }
 
   Future<int> get baseBranchTimeComponent => baseBranchCommits.then(_timeComponent);
@@ -229,10 +220,8 @@ class GitVersioner {
   ///
   /// `git branch --all --list "*$rev"`
   Stream<String> _branchLocalOrRemote(String branchName) async* {
-    String text;
-    try {
-      text = await git("branch --all --list *$branchName");
-    } catch (ex, stack) {
+    String text = await git("branch --all --list *$branchName");
+    if (text == null) {
       return;
     }
     var branches = text
