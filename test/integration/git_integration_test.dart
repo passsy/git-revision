@@ -25,6 +25,7 @@ void main() {
       var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 1\n'));
+      expect(out, contains('versionName: 1_5c0c7da\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
       expect(out, contains('baseBranchCommitCount first-only: 1\n'));
@@ -54,6 +55,7 @@ void main() {
       var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 6\n'));
+      expect(out, contains('versionName: 6_d8dd0e3\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
       expect(out, contains('baseBranchCommitCount first-only: 3\n'));
@@ -101,6 +103,7 @@ void main() {
       expect(out2, contains('baseBranchTimeComponent: 6\n'));
       expect(out2, contains('baseBranchCommitCount: 5\n'));
       expect(out2, contains('versionCode: 11\n'));
+      expect(out2, contains('versionName: 11_b0c09de\n'));
 
       await git.run(name: 'go back to commit before merge', script: sh("""
           git checkout master
@@ -110,6 +113,7 @@ void main() {
       // same revision as before
       var out3 = await git.revision(['--full']);
       expect(out3, contains('versionCode: 3\n'));
+      expect(out3, contains('versionName: 3_5dc00fd\n'));
     });
   });
 
@@ -117,6 +121,39 @@ void main() {
     TempGit git;
     setUp(() async {
       git = await makeTempGit();
+    });
+
+    test("no branch name - fallback to sha1", () async {
+      git.skipCleanup = true;
+      print('cd ${git.repo.path} && stree .');
+      await git.run(name: 'init master branch - work on featureB', script: sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 6))}
+          
+          # Work on featureB
+          git checkout -b 'featureB'
+          echo 'implement feature B' > b.txt
+          git add b.txt
+          # Date is before the last commit on master
+          ${commit("implement feature B", initTime.add(hour * 4))}
+          
+          echo 'fix bug' > b.txt
+          ${commit("fix bug", initTime.add(day))}
+          """));
+
+      await git.run(name: 'delete feature branch and stay on detached head', script: sh("""
+          git checkout master
+          git branch -D featureB
+          git checkout 7f1417d
+          """));
+
+      var out = await git.revision(['--full']);
+      expect(out, contains('versionName: 3+2_7f1417d\n'));
     });
 
     test("feature branch still has +commits after merge in master", () async {
