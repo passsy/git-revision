@@ -70,7 +70,7 @@ void main() {
       git = await makeTempGit();
     });
 
-    test('on orphan HEAD', () async {
+    test('first commit', () async {
       git.skipCleanup = true;
       print('cd ${git.repo.path} && fork');
       await git.run(name: 'init with 3 commits', script: sh("""
@@ -92,20 +92,67 @@ void main() {
           echo 'World Hello' > a.txt
           git add a.txt
           
-          ${commit("orphan commit", initTime)}
+          ${commit("orphan commit", initTime.add(day * 2))}
           """));
 
       var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 0\n'));
-      expect(out, contains('versionName: 0_another_root_1c1af84\n'));
+      expect(out, contains('versionName: 0_another_root+1_60acfd6\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: another_root\n'));
       expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
       expect(out, contains('baseBranchCommitCount: 0\n'));
       expect(out, contains('baseBranchTimeComponent: 0\n'));
-      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchCommitCount: 1\n'));
       expect(out, contains('featureBranchTimeComponent: 0\n'));
+      expect(out, contains('featureOrigin: null\n'));
+      expect(out, contains('yearFactor: 1000\n'));
+      expect(out, contains('localChanges: 0 +0 -0'));
+    });
+
+    test('3 commits', () async {
+      git.skipCleanup = true;
+      print('cd ${git.repo.path} && fork');
+      await git.run(name: 'init with 3 commits', script: sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 4))}
+          
+          echo 'third commit' > a.txt
+          ${commit("third commit", initTime.add(day))}
+          """));
+
+      await git.run(name: 'create orphan commit', script: sh("""
+          git checkout --orphan another_root
+          echo 'World Hello' > a.txt
+          git add a.txt
+          
+          ${commit("orphan commit", initTime.add(day * 2))}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(day * 2 + hour * 4))}
+          
+          echo 'third commit' > a.txt
+          ${commit("third commit", initTime.add(day * 3))}
+          """));
+
+      var out = await git.revision(['--full']);
+
+      expect(out, contains('versionCode: 0\n'));
+      expect(out, contains('versionName: 0_another_root+3_8059b5b\n'));
+      expect(out, contains('baseBranch: master\n'));
+      expect(out, contains('currentBranch: another_root\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
+      expect(out, contains('baseBranchCommitCount: 0\n'));
+      expect(out, contains('baseBranchTimeComponent: 0\n'));
+      expect(out, contains('featureBranchCommitCount: 3\n'));
+      expect(out, contains('featureBranchTimeComponent: 3\n'));
       expect(out, contains('featureOrigin: null\n'));
       expect(out, contains('yearFactor: 1000\n'));
       expect(out, contains('localChanges: 0 +0 -0'));

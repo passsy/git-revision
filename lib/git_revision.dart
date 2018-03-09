@@ -135,12 +135,13 @@ class GitVersioner {
   /// All commits in history of [GitVersionerConfig.rev]
   Future<List<Commit>> get commits => revList(config.rev);
 
-  /// Commit where the featureBranch branched off the baseBranch or `null`
+  /// Commit where the featureBranch branched off the baseBranch or the first commit in history in case of an
+  /// unrelated history
   Future<Commit> get featureBranchOrigin async {
-    try {
-      var firstBaseCommits = await allFirstBaseBranchCommits;
-      var allheadCommits = await commits;
+    var firstBaseCommits = await allFirstBaseBranchCommits;
+    var allheadCommits = await commits;
 
+    try {
       return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
     } catch (ex, stack) {
       return null;
@@ -159,11 +160,12 @@ class GitVersioner {
   /// This are the commits which are added to this branch which are not yet merged into baseBranch at this point.
   /// They may be merged already in the future history which will be ignored here
   Future<List<Commit>> get featureBranchCommits async {
-    try {
-      var origin = await featureBranchOrigin;
+    var origin = await featureBranchOrigin;
+    if(origin != null){
       return revList('${config.rev}...${origin.sha1}');
-    } catch (ex, stack) {
-      return [];
+    } else {
+      // in case of unrelated histories use all commit in history
+      return await commits;
     }
   }
 
