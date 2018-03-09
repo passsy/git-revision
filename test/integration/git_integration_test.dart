@@ -7,7 +7,6 @@ import 'util/temp_git.dart';
 final DateTime initTime = new DateTime(2017, DateTime.JANUARY, 10);
 
 void main() {
-
   group('initialize', () {
     TempGit git;
     setUp(() async {
@@ -158,7 +157,6 @@ void main() {
       expect(out, contains('localChanges: 0 +0 -0'));
     });
   });
-
 
   group('master only', () {
     TempGit git;

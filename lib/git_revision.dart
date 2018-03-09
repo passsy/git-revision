@@ -161,7 +161,7 @@ class GitVersioner {
   /// They may be merged already in the future history which will be ignored here
   Future<List<Commit>> get featureBranchCommits async {
     var origin = await featureBranchOrigin;
-    if(origin != null){
+    if (origin != null) {
       return revList('${config.rev}...${origin.sha1}');
     } else {
       // in case of unrelated histories use all commit in history
