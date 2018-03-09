@@ -42,13 +42,13 @@ class CliApp {
         baseBranch: ${versioner.config.baseBranch}
         currentBranch: ${await versioner.headBranchName}
         sha1: ${await versioner.sha1}
-        sha1Short: ${(await versioner.sha1).substring(0, 7)}
+        sha1Short: ${(await versioner.sha1)?.substring(0, 7)}
         baseBranchCommitCount first-only: ${(await versioner.firstBaseBranchCommits).length}
         baseBranchCommitCount: ${(await versioner.baseBranchCommits).length}
         baseBranchTimeComponent: ${await versioner.baseBranchTimeComponent}
         featureBranchCommitCount: ${(await versioner.featureBranchCommits).length}
         featureBranchTimeComponent: ${(await versioner.featureBranchTimeComponent)}
-        featureOrigin: ${(await versioner.featureBranchOrigin).sha1}
+        featureOrigin: ${(await versioner.featureBranchOrigin)?.sha1}
         yearFactor: ${versioner.config.yearFactor}
         localChanges: ${await versioner.localChanges}
         '''));

@@ -46,14 +46,24 @@ class GitVersioner {
       return LocalChanges.NONE;
     }
 
-    var changes = await git('diff --shortstat HEAD', emptyResultIsError: false);
-    return _parseDiffShortStat(changes);
+    try {
+      var changes = await git('diff --shortstat HEAD', emptyResultIsError: false);
+      return _parseDiffShortStat(changes);
+    } catch (ex, stack) {
+      print(ex);
+      if (ex.message?.contains("ambiguous argument 'HEAD'")) {
+        // no commits, no HEAD
+        return null;
+      } else {
+        throw ex;
+      }
+    }
   }
 
   // TODO swap name with revision
   Future<String> get versionName async {
     var rev = await revision;
-    var hash = (await sha1).substring(0, 7);
+    var hash = (await sha1)?.substring(0, 7) ?? "0000000";
     var additionalCommits = await featureBranchCommits;
 
     if (config.rev == 'HEAD') {
@@ -100,24 +110,33 @@ class GitVersioner {
     return name;
   }
 
+  /// full Sha1 or `null`
   Future<String> get sha1 async {
-    var hash = await git('rev-parse ${config.rev}');
-    assert(() {
-      if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
-      if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
-      return true;
-    }());
+    try {
+      var hash = await git('rev-parse ${config.rev}');
+      assert(() {
+        if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
+        if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
+        return true;
+      }());
 
-    return hash;
+      return hash;
+    } catch (ex, stack) {
+      return null;
+    }
   }
 
   /// All first-parent commits in baseBranch
   ///
   /// Most often a subset of [firstHeadBranchCommits]
   Future<List<Commit>> get firstBaseBranchCommits async {
-    var base = await baseBranch;
-    var commits = await revList('$base', firstParentOnly: true);
-    return commits;
+    try {
+      var base = await baseBranch;
+      var commits = await revList('$base', firstParentOnly: true);
+      return commits;
+    } catch (ex, stack) {
+      return [];
+    }
   }
 
   /// All commits in history of [GitVersionerConfig.rev]
@@ -125,42 +144,53 @@ class GitVersioner {
   /// If [GitVersionerConfig.rev] is branched off baseBranch it should contain all commits in [firstBaseBranchCommits]
   Future<List<Commit>> get commits => revList(config.rev);
 
-  /// Commit where the featureBranch branched off the baseBranch
+  /// Commit where the featureBranch branched off the baseBranch or `null`
   Future<Commit> get featureBranchOrigin async {
-    var firstBaseCommits = await firstBaseBranchCommits;
-    var allheadCommits = await commits;
+    try {
+      var firstBaseCommits = await firstBaseBranchCommits;
+      var allheadCommits = await commits;
 
-    return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
+      return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
+    } catch (ex, stack) {
+      return null;
+    }
   }
 
   /// All commits in baseBranch which are also in history of [GitVersionerConfig.rev]
   ///
   /// ignores when current branch is merged into baseBranch in the future. Starts from this commit, first finds
   /// where this branch was branched off the base branch and counts the baseBranch commits from there
-  Future<List<Commit>> get baseBranchCommits => featureBranchOrigin.then((commit) => revList(commit.sha1));
+  Future<List<Commit>> get baseBranchCommits =>
+      featureBranchOrigin.then((commit) => revList(commit.sha1)).catchError((ex, stack) => []);
 
   /// All commits since [GitVersionerConfig.rev] branched off the base branch
   ///
   /// This are the commits which are added to this branch which are not yet merged into baseBranch at this point.
   /// They may be merged already in the future history which will be ignored here
   Future<List<Commit>> get featureBranchCommits async {
-    var origin = await featureBranchOrigin;
-    return revList('${config.rev}...${origin.sha1}');
+    try {
+      var origin = await featureBranchOrigin;
+      return revList('${config.rev}...${origin.sha1}');
+    } catch (ex, stack) {
+      return [];
+    }
   }
 
-  // TODO check if always valid to use `.first`
-  // Then replace all config.baseBranch with await baseBranch
   Future<String> get baseBranch => _branchLocalOrRemote(config.baseBranch).first;
 
   /// runs `git rev-list $rev` and returns the commits in order new -> old
   Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) async {
-    // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-    String result =
-        await git('rev-list --pretty=%cI%n${firstParentOnly ? ' --first-parent' : ''} $rev', emptyResultIsError: false);
-    return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
-      var lines = rawCommit.split('\n');
-      return new Commit(lines[0].replaceFirst('commit ', ''), lines[1]);
-    }).toList(growable: false);
+    try {
+      // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
+      String result = await git('rev-list --pretty=%cI%n${firstParentOnly ? ' --first-parent' : ''} $rev',
+          emptyResultIsError: false);
+      return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
+        var lines = rawCommit.split('\n');
+        return new Commit(lines[0].replaceFirst('commit ', ''), lines[1]);
+      }).toList(growable: false);
+    } catch (ex, stack) {
+      return [];
+    }
   }
 
   Future<int> get baseBranchTimeComponent => baseBranchCommits.then(_timeComponent);
@@ -199,7 +229,12 @@ class GitVersioner {
   ///
   /// `git branch --all --list "*$rev"`
   Stream<String> _branchLocalOrRemote(String branchName) async* {
-    var text = await git("branch --all --list *$branchName");
+    String text;
+    try {
+      text = await git("branch --all --list *$branchName");
+    } catch (ex, stack) {
+      return;
+    }
     var branches = text
         .split('\n')
         // remove asterisk marking the current branch
