@@ -27,7 +27,7 @@ void main() {
       expect(out, contains('currentBranch: null\n'));
       expect(out, contains('sha1: null\n'));
       expect(out, contains('sha1Short: null\n'));
-      expect(out, contains('baseBranchCommitCount first-only: 0\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 0\n'));
       expect(out, contains('baseBranchCommitCount: 0\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));
       expect(out, contains('baseBranchTimeComponent: 0\n'));
@@ -52,7 +52,7 @@ void main() {
       expect(out, contains('currentBranch: master\n'));
       expect(out, contains('sha1: null\n'));
       expect(out, contains('sha1Short: null\n'));
-      expect(out, contains('baseBranchCommitCount first-only: 0\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 0\n'));
       expect(out, contains('baseBranchCommitCount: 0\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));
       expect(out, contains('baseBranchTimeComponent: 0\n'));
@@ -63,6 +63,55 @@ void main() {
       expect(out, contains('localChanges: null'));
     });
   });
+
+  group('orphan branch', () {
+    TempGit git;
+    setUp(() async {
+      git = await makeTempGit();
+    });
+
+    test('on orphan HEAD', () async {
+      git.skipCleanup = true;
+      print('cd ${git.repo.path} && fork');
+      await git.run(name: 'init with 3 commits', script: sh("""
+          git init
+          echo 'Hello World' > a.txt
+          git add a.txt
+          
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 4))}
+          
+          echo 'third commit' > a.txt
+          ${commit("third commit", initTime.add(day))}
+          """));
+
+      await git.run(name: 'create orphan commit', script: sh("""
+          git checkout --orphan another_root
+          echo 'World Hello' > a.txt
+          git add a.txt
+          
+          ${commit("orphan commit", initTime)}
+          """));
+
+      var out = await git.revision(['--full']);
+
+      expect(out, contains('versionCode: 0\n'));
+      expect(out, contains('versionName: 0_another_root_1c1af84\n'));
+      expect(out, contains('baseBranch: master\n'));
+      expect(out, contains('currentBranch: another_root\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
+      expect(out, contains('baseBranchCommitCount: 0\n'));
+      expect(out, contains('baseBranchTimeComponent: 0\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchTimeComponent: 0\n'));
+      expect(out, contains('featureOrigin: null\n'));
+      expect(out, contains('yearFactor: 1000\n'));
+      expect(out, contains('localChanges: 0 +0 -0'));
+    });
+  });
+
 
   group('master only', () {
     TempGit git;
@@ -85,7 +134,7 @@ void main() {
       expect(out, contains('versionName: 1_5c0c7da\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
-      expect(out, contains('baseBranchCommitCount first-only: 1\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 1\n'));
       expect(out, contains('baseBranchCommitCount: 1\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));
       expect(out, contains('baseBranchTimeComponent: 0\n'));
@@ -115,7 +164,7 @@ void main() {
       expect(out, contains('versionName: 6_d8dd0e3\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
-      expect(out, contains('baseBranchCommitCount first-only: 3\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
       expect(out, contains('baseBranchCommitCount: 3\n'));
       expect(out, contains('baseBranchTimeComponent: 3\n'));
       expect(out, contains('featureBranchCommitCount: 0\n'));

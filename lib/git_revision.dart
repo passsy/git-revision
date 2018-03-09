@@ -122,9 +122,9 @@ class GitVersioner {
   /// All first-parent commits in baseBranch
   ///
   /// Most often a subset of [firstHeadBranchCommits]
-  Future<List<Commit>> get firstBaseBranchCommits async {
+  Future<List<Commit>> get allFirstBaseBranchCommits async {
     try {
-      var base = await baseBranch;
+      var base = await _branchLocalOrRemote(config.baseBranch).first;
       var commits = await revList('$base', firstParentOnly: true);
       return commits;
     } catch (ex, stack) {
@@ -133,14 +133,12 @@ class GitVersioner {
   }
 
   /// All commits in history of [GitVersionerConfig.rev]
-  ///
-  /// If [GitVersionerConfig.rev] is branched off baseBranch it should contain all commits in [firstBaseBranchCommits]
   Future<List<Commit>> get commits => revList(config.rev);
 
   /// Commit where the featureBranch branched off the baseBranch or `null`
   Future<Commit> get featureBranchOrigin async {
     try {
-      var firstBaseCommits = await firstBaseBranchCommits;
+      var firstBaseCommits = await allFirstBaseBranchCommits;
       var allheadCommits = await commits;
 
       return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
@@ -168,8 +166,6 @@ class GitVersioner {
       return [];
     }
   }
-
-  Future<String> get baseBranch => _branchLocalOrRemote(config.baseBranch).first;
 
   /// runs `git rev-list $rev` and returns the commits in order new -> old
   Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) async {
@@ -326,8 +322,8 @@ class _CachedGitVersioner extends GitVersioner {
   Future<int> get baseBranchTimeComponent => cache(() => super.baseBranchTimeComponent, '<baseBranch> timeComponent');
 
   @override
-  Future<List<Commit>> get firstBaseBranchCommits =>
-      cache(() => super.firstBaseBranchCommits, 'firstBaseBranchCommits');
+  Future<List<Commit>> get allFirstBaseBranchCommits =>
+      cache(() => super.allFirstBaseBranchCommits, 'allFirstBaseBranchCommits');
 
   @override
   Future<List<Commit>> get featureBranchCommits => cache(() => super.featureBranchCommits, '<featureBranch> commits');
@@ -356,9 +352,6 @@ class _CachedGitVersioner extends GitVersioner {
 
   @override
   Future<List<Commit>> get commits => cache(() => super.commits, 'commits');
-
-  @override
-  Future<String> get baseBranch => cache(() => super.baseBranch, 'branch --all --list', io: true);
 
   @override
   Future<Commit> get featureBranchOrigin => cache(() => super.featureBranchOrigin, 'featureBranchOrigin');

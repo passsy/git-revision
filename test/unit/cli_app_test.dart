@@ -296,7 +296,7 @@ void main() {
         when(versioner.headBranchName).thenReturn(new Future.value('myBranch'));
         when(versioner.baseBranch).thenReturn(new Future.value('baseBranch'));
         when(versioner.sha1).thenReturn(new Future.value('1234567'));
-        when(versioner.firstBaseBranchCommits).thenReturn(new Future.value(_commits(152)));
+        when(versioner.allFirstBaseBranchCommits).thenReturn(new Future.value(_commits(152)));
         when(versioner.baseBranchCommits).thenReturn(new Future.value(_commits(377)));
         when(versioner.baseBranchTimeComponent).thenReturn(new Future.value('773'));
         when(versioner.featureBranchCommits).thenReturn(new Future.value(_commits(677)));
@@ -330,8 +330,8 @@ void main() {
       expect(log, contains('baseBranch'));
     });
 
-    test('shows first base branch', () async {
-      expect(log, contains('baseBranchCommitCount first-only: 152'));
+    test('shows complete first-only base branch commit count', () async {
+      expect(log, contains('completeFirstOnlyBaseBranchCommitCount: 152'));
     });
 
     test('shows sha1', () async {

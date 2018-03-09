@@ -43,7 +43,7 @@ class CliApp {
         currentBranch: ${await versioner.headBranchName}
         sha1: ${await versioner.sha1}
         sha1Short: ${(await versioner.sha1)?.substring(0, 7)}
-        baseBranchCommitCount first-only: ${(await versioner.firstBaseBranchCommits).length}
+        completeFirstOnlyBaseBranchCommitCount: ${(await versioner.allFirstBaseBranchCommits).length}
         baseBranchCommitCount: ${(await versioner.baseBranchCommits).length}
         baseBranchTimeComponent: ${await versioner.baseBranchTimeComponent}
         featureBranchCommitCount: ${(await versioner.featureBranchCommits).length}
