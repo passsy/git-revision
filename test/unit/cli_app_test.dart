@@ -291,18 +291,19 @@ void main() {
       app = new CliApp(logger, (config) {
         versioner = new _MockGitVersioner();
         when(versioner.config).thenReturn(config);
-        when(versioner.revision).thenReturn(new Future.value('432'));
-        when(versioner.versionName).thenReturn(new Future.value('432-SNAPSHOT'));
-        when(versioner.headBranchName).thenReturn(new Future.value('myBranch'));
-        when(versioner.sha1).thenReturn(new Future.value('1234567'));
-        when(versioner.allFirstBaseBranchCommits).thenReturn(new Future.value(_commits(152)));
-        when(versioner.baseBranchCommits).thenReturn(new Future.value(_commits(377)));
-        when(versioner.baseBranchTimeComponent).thenReturn(new Future.value('773'));
-        when(versioner.featureBranchCommits).thenReturn(new Future.value(_commits(677)));
-        when(versioner.featureBranchTimeComponent).thenReturn(new Future.value('776'));
-        when(versioner.featureBranchOrigin).thenReturn(new Future.value(new Commit('featureBranchOrigin', null)));
-        when(versioner.commits).thenReturn(new Future.value(_commits(432)));
-        when(versioner.localChanges).thenReturn(new Future.value(const LocalChanges(4, 5, 6)));
+        when(versioner.revision).thenAnswer((_) => new Future.value(432));
+        when(versioner.versionName).thenAnswer((_) => new Future.value('432-SNAPSHOT'));
+        when(versioner.headBranchName).thenAnswer((_) => new Future.value('myBranch'));
+        when(versioner.sha1).thenAnswer((_) => new Future.value('1234567'));
+        when(versioner.allFirstBaseBranchCommits).thenAnswer((_) => new Future.value(_commits(152)));
+        when(versioner.baseBranchCommits).thenAnswer((_) => new Future.value(_commits(377)));
+        when(versioner.baseBranchTimeComponent).thenAnswer((_) => new Future.value(773));
+        when(versioner.featureBranchCommits).thenAnswer((_) => new Future.value(_commits(677)));
+        when(versioner.featureBranchTimeComponent).thenAnswer((_) => new Future.value(776));
+        when(versioner.featureBranchOrigin)
+            .thenAnswer((_) => new Future.value(new Commit('featureBranchOrigin', null)));
+        when(versioner.commits).thenAnswer((_) => new Future.value(_commits(432)));
+        when(versioner.localChanges).thenAnswer((_) => new Future.value(const LocalChanges(4, 5, 6)));
         return versioner;
       });
       await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf', '--full']);

@@ -127,7 +127,7 @@ class GitVersioner {
       var base = await _branchLocalOrRemote(config.baseBranch).first;
       var commits = await revList('$base', firstParentOnly: true);
       return commits;
-    } catch (ex, stack) {
+    } catch (ex) {
       return [];
     }
   }
@@ -143,7 +143,7 @@ class GitVersioner {
 
     try {
       return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
-    } catch (ex, stack) {
+    } catch (ex) {
       return null;
     }
   }
@@ -152,8 +152,10 @@ class GitVersioner {
   ///
   /// ignores when current branch is merged into baseBranch in the future. Starts from this commit, first finds
   /// where this branch was branched off the base branch and counts the baseBranch commits from there
-  Future<List<Commit>> get baseBranchCommits =>
-      featureBranchOrigin.then((commit) => revList(commit.sha1)).catchError((ex, stack) => []);
+  Future<List<Commit>> get baseBranchCommits => featureBranchOrigin.then((origin) {
+        if (origin == null) return <Commit>[];
+        return revList(origin.sha1);
+      });
 
   /// All commits since [GitVersionerConfig.rev] branched off the base branch
   ///
@@ -331,7 +333,8 @@ class _CachedGitVersioner extends GitVersioner {
   Future<List<Commit>> get featureBranchCommits => cache(() => super.featureBranchCommits, '<featureBranch> commits');
 
   @override
-  Future<List<Commit>> get baseBranchCommits => cache(() => super.baseBranchCommits, '<baseBranch> commits');
+  Future<List<Commit>> get baseBranchCommits =>
+      cache<List<Commit>>(() => super.baseBranchCommits, '<baseBranch> commits');
 
   @override
   Future<String> get sha1 => cache(() => super.sha1, 'rev-parse ${config.rev}', io: true);

@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 import 'util/temp_git.dart';
 
-final DateTime initTime = new DateTime(2017, DateTime.JANUARY, 10);
+final DateTime initTime = new DateTime(2017, DateTime.january, 10);
 
 void main() {
   group('initialize', () {
