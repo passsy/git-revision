@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:git_revision/cache.dart';
 import 'package:git_revision/git/commit.dart';
 import 'package:git_revision/git/local_changes.dart';
 
@@ -15,7 +16,8 @@ class GitVersioner {
 
   /// always returns a version which automatically caches
   factory GitVersioner(GitVersionerConfig config) {
-    return new _CachedGitVersioner(config);
+    var versioner = new GitVersioner._(config);
+    return new CachedGitVersioner(versioner);
   }
 
   GitVersioner._(this.config);
@@ -269,97 +271,6 @@ int _startingNumber(String text) {
     return int.parse(match.group(1));
   }
   return null;
-}
-
-const bool ANALYZE_TIME = false;
-
-/// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
-class _CachedGitVersioner extends GitVersioner {
-  _CachedGitVersioner(GitVersionerConfig config) : super._(config);
-
-  var _indent = 0;
-  final Map<String, Future> _futureCache = {};
-
-  /// Caches futures
-  Future<T> cache<T>(Future<T> futureProvider(), String name, {bool io = false}) async {
-    var cached = _futureCache[name];
-    if (cached != null) {
-      if (ANALYZE_TIME) {
-        for (var i = 0; i < _indent; i++) stdout.write("| ");
-        print(">>>> cache hit '$name'");
-      }
-      return cached;
-    }
-    var future = futureProvider();
-    _futureCache[name] = future;
-
-    if (ANALYZE_TIME) {
-      var start = new DateTime.now();
-      _indent++;
-      var indent = _indent;
-
-      if (!io) {
-        for (var i = 1; i < indent; i++) stdout.write("| ");
-        print("+ '$name'");
-      }
-
-      var result = await future;
-      _indent--;
-      var diff = new DateTime.now().difference(start);
-
-      for (var i = 1; i < indent; i++) stdout.write("| ");
-      print("${io ? '>' : '=>'} '$name' took ${diff.inMilliseconds}ms");
-      return result;
-    } else {
-      return await future;
-    }
-  }
-
-  @override
-  Future<int> get revision => cache(() => super.revision, 'revision');
-
-  @override
-  Future<int> get featureBranchTimeComponent =>
-      cache(() => super.featureBranchTimeComponent, '<featureBranch> timeComponent');
-
-  @override
-  Future<int> get baseBranchTimeComponent => cache(() => super.baseBranchTimeComponent, '<baseBranch> timeComponent');
-
-  @override
-  Future<List<Commit>> get allFirstBaseBranchCommits =>
-      cache(() => super.allFirstBaseBranchCommits, 'allFirstBaseBranchCommits');
-
-  @override
-  Future<List<Commit>> get featureBranchCommits => cache(() => super.featureBranchCommits, '<featureBranch> commits');
-
-  @override
-  Future<List<Commit>> get baseBranchCommits =>
-      cache<List<Commit>>(() => super.baseBranchCommits, '<baseBranch> commits');
-
-  @override
-  Future<String> get sha1 => cache(() => super.sha1, 'rev-parse ${config.rev}', io: true);
-
-  @override
-  Future<String> get headBranchName =>
-      cache(() => super.headBranchName, 'symbolic-ref --short -q ${config.rev}', io: true);
-
-  @override
-  Future<String> get versionName => cache(() => super.versionName, 'versionName');
-
-  @override
-  Future<LocalChanges> get localChanges => cache(() => super.localChanges, 'diff --shortstat ${config.rev}', io: true);
-
-  @override
-  Future<List<Commit>> revList(String rev, {bool firstParentOnly = false}) => cache(
-      () => super.revList(rev, firstParentOnly: firstParentOnly),
-      'rev-list $rev${firstParentOnly ? ' --first-parent' : ''}',
-      io: true);
-
-  @override
-  Future<List<Commit>> get commits => cache(() => super.commits, 'commits');
-
-  @override
-  Future<Commit> get featureBranchOrigin => cache(() => super.featureBranchOrigin, 'featureBranchOrigin');
 }
 
 class GitVersionerConfig {
