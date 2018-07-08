@@ -28,7 +28,7 @@ class TempGit {
 
   Future<Null> setup() async {
     root = await io.Directory.systemTemp.createTemp('git-revision-integration-test');
-    var path = "${root.path }${io.Platform.pathSeparator}repo";
+    var path = "${root.path}${io.Platform.pathSeparator}repo";
     repo = await new io.Directory(path).create();
   }
 
