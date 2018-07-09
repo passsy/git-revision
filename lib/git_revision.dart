@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:git_revision/cache.dart';
 import 'package:git_revision/git/commit.dart';
 import 'package:git_revision/git/local_changes.dart';
+
+part 'cache.dart';
 
 const Duration _YEAR = const Duration(days: 365);
 
@@ -17,7 +18,7 @@ class GitVersioner {
   /// always returns a version which automatically caches
   factory GitVersioner(GitVersionerConfig config) {
     var versioner = new GitVersioner._(config);
-    return new CachedGitVersioner(versioner);
+    return new _CachedGitVersioner(versioner);
   }
 
   GitVersioner._(this.config);

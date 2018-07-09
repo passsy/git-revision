@@ -1,17 +1,12 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:git_revision/git/commit.dart';
-import 'package:git_revision/git/local_changes.dart';
-import 'package:git_revision/git_revision.dart';
+part of 'git_revision.dart';
 
 const bool ANALYZE_TIME = false;
 
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
-class CachedGitVersioner implements GitVersioner {
+class _CachedGitVersioner implements GitVersioner {
   GitVersioner _delegate;
 
-  CachedGitVersioner(GitVersioner delegate) : _delegate = delegate;
+  _CachedGitVersioner(GitVersioner delegate) : _delegate = delegate;
 
   var _indent = 0;
   final Map<String, Future> _futureCache = {};
@@ -110,4 +105,14 @@ class CachedGitVersioner implements GitVersioner {
   @override
   Future<String> git(String args, {bool emptyResultIsError: true}) =>
       _delegate.git(args, emptyResultIsError: emptyResultIsError);
+
+  @override
+  Stream<String> _branchLocalOrRemote(String branchName) =>
+      throw new Exception("Accessed private function form outside");
+
+  @override
+  int _timeComponent(List<Commit> commits) => throw new Exception("Accessed private function form outside");
+
+  @override
+  int _yearFactor(Duration duration) => throw new Exception("Accessed private function form outside");
 }
