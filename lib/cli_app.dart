@@ -4,6 +4,8 @@ import 'dart:io' as io;
 import 'package:args/args.dart';
 import 'package:git_revision/git_revision.dart';
 
+part 'cli_app.g.dart';
+
 typedef GitVersioner GitVersionerProvider(GitVersionerConfig config);
 
 class CliApp {
@@ -145,7 +147,7 @@ class CliApp {
   }
 
   void showVersion() {
-    logger.stdOut("Version 0.4.0");
+    logger.stdOut("Version $versionName");
   }
 }
 
