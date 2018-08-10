@@ -18,7 +18,7 @@ class CliApp {
       : assert(logger != null),
         assert(versionerProvider != null);
 
-  CliApp.production([CliLogger logger = CliLogger()]) : this(logger, (config) => GitVersioner(config));
+  CliApp.production([CliLogger logger = const CliLogger()]) : this(logger, (config) => GitVersioner(config));
 
   Future<Null> process(List<String> args) async {
     final cliArgs = parseCliArgs(args);
@@ -203,7 +203,7 @@ class GitRevisionCliArgs {
 
 // TODO move out of implementation
 class CliLogger {
-  CliLogger();
+  const CliLogger();
 
   void stdOut(String s) => io.stdout.writeln(s);
 

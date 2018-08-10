@@ -303,7 +303,7 @@ void main() {
         when(versioner.featureBranchOrigin)
             .thenAnswer((_) => new Future.value(new Commit('featureBranchOrigin', null)));
         when(versioner.commits).thenAnswer((_) => new Future.value(_commits(432)));
-        when(versioner.localChanges).thenAnswer((_) => new Future.value(const LocalChanges(4, 5, 6)));
+        when(versioner.localChanges).thenAnswer((_) => new Future.value(LocalChanges(4, 5, 6)));
         return versioner;
       });
       await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf', '--full']);

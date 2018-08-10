@@ -5,7 +5,7 @@ class LocalChanges {
 
   static LocalChanges NONE = LocalChanges(0, 0, 0);
 
-  LocalChanges(this.filesChanged, this.additions, this.deletions)
+  const LocalChanges(this.filesChanged, this.additions, this.deletions)
       : assert(filesChanged >= 0),
         assert(additions >= 0),
         assert(deletions >= 0);
