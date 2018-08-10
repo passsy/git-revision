@@ -23,7 +23,7 @@ class VersionGenerator extends Generator {
 
     var dartfmt = DartFormatter();
     return dartfmt.format('''
-           const versionName = '$versionString';
+           const String versionName = '$versionString';
            ''');
   }
 }

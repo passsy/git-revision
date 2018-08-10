@@ -6,4 +6,4 @@ part of 'cli_app.dart';
 // VersionGenerator
 // **************************************************************************
 
-const versionName = '0.5.1';
+const String versionName = '0.5.1';
