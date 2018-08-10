@@ -5,20 +5,20 @@ import 'package:git_revision/git/commit.dart';
 import 'package:git_revision/git/git_client.dart';
 import 'package:git_revision/git/local_changes.dart';
 
-const Duration _YEAR = const Duration(days: 365);
+Duration _YEAR = Duration(days: 365);
 
 class GitVersioner {
-  static const String DEFAULT_BRANCH = 'master';
-  static const int DEFAULT_YEAR_FACTOR = 1000;
-  static const int DEFAULT_STOP_DEBOUNCE = 48;
+  static String DEFAULT_BRANCH = 'master';
+  static int DEFAULT_YEAR_FACTOR = 1000;
+  static int DEFAULT_STOP_DEBOUNCE = 48;
 
   final GitVersionerConfig config;
   final GitClient gitClient;
 
   /// always returns a version which automatically caches
   factory GitVersioner(GitVersionerConfig config) {
-    var versioner = new GitVersioner._(config, GitClient(config.repoPath));
-    return new _CachedGitVersioner(versioner);
+    var versioner = GitVersioner._(config, GitClient(config.repoPath));
+    return _CachedGitVersioner(versioner);
   }
 
   GitVersioner._(this.config, this.gitClient);

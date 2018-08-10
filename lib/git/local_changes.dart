@@ -3,9 +3,9 @@ class LocalChanges {
   final int additions;
   final int deletions;
 
-  static const LocalChanges NONE = const LocalChanges(0, 0, 0);
+  static LocalChanges NONE = LocalChanges(0, 0, 0);
 
-  const LocalChanges(this.filesChanged, this.additions, this.deletions)
+  LocalChanges(this.filesChanged, this.additions, this.deletions)
       : assert(filesChanged >= 0),
         assert(additions >= 0),
         assert(deletions >= 0);
