@@ -37,7 +37,6 @@ linter:
     - list_remove_unrelated_type
     - no_adjacent_strings_in_list
     - no_duplicate_case_values
-    - non_constant_identifier_names
     - overridden_fields
     - package_api_docs # TODO enable again before publishing
     - package_names
@@ -46,7 +45,6 @@ linter:
     - prefer_asserts_in_initializer_lists
     - prefer_collection_literals
     - prefer_conditional_assignment
-    - prefer_const_constructors
     - prefer_const_constructors_in_immutables
     - prefer_contains
     - prefer_final_fields
@@ -68,6 +66,8 @@ linter:
     - unawaited_futures
     - unnecessary_brace_in_string_interps
     - unnecessary_getters_setters
+    - unnecessary_new
+    - unnecessary_const
     - unnecessary_null_aware_assignments
     - unnecessary_null_in_if_null_operators
     - unnecessary_overrides
