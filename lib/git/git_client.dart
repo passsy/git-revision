@@ -160,7 +160,7 @@ class _GitClientCache extends GitClient with FutureCacheMixin {
   }
 
   @override
-  Future<String> git(String args, {bool emptyResultIsError: true}) {
+  Future<String> git(String args, {bool emptyResultIsError = true}) {
     var name = 'git $args -- $emptyResultIsError';
     return cache(() => super.git(args, emptyResultIsError: emptyResultIsError), name);
   }

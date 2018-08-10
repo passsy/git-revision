@@ -1,6 +1,6 @@
 import 'dart:async';
 
-bool ANALYZE = false;
+const bool ANALYZE = false;
 
 // Mixin allowing to cache Futures
 class FutureCacheMixin {

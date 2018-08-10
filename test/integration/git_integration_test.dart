@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 import 'util/temp_git.dart';
 
-final DateTime initTime = new DateTime(2017, DateTime.january, 10);
+final DateTime initTime = DateTime(2017, DateTime.january, 10);
 
 void main() {
   group('initialize', () {
@@ -425,7 +425,7 @@ void main() {
     });
 
     test("master only on remote", () async {
-      var repo2 = await new io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      var repo2 = await io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
       await git.run(name: 'init master branch', repo: repo2, script: sh("""
           git init
           echo 'Hello World' > a.txt
@@ -460,7 +460,7 @@ void main() {
     });
 
     test("master only on remote which is not called origin", () async {
-      var repo2 = await new io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      var repo2 = await io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
       await git.run(name: 'init master branch', repo: repo2, script: sh("""
           git init
           echo 'Hello World' > a.txt
@@ -494,7 +494,7 @@ void main() {
     });
 
     test("master only on one remote - multiple remotes", () async {
-      var repo2 = await new io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      var repo2 = await io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
       await git.run(name: 'init master branch', repo: repo2, script: sh("""
           git init
           echo 'Hello World' > a.txt

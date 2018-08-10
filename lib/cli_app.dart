@@ -170,8 +170,7 @@ class GitRevisionCliArgs {
   String toString() =>
       'GitRevisionCliArgs{helpFlag: $showHelp, versionFlag: $showVersion, baseBranch: $baseBranch, repoPath: $repoPath, yearFactor: $yearFactor, stopDebounce: $stopDebounce}';
 
-  GitVersionerConfig toConfig() =>
-      GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, name, revision);
+  GitVersionerConfig toConfig() => GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, name, revision);
 
   @override
   bool operator ==(Object other) =>

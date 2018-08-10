@@ -249,7 +249,7 @@ void main() {
       expect(output.messages[0], contains('Version'));
 
       // contains a semantic version string (simplified)
-      var semanticVersion = new RegExp(r'.*\d{1,3}\.\d{1,3}\.\d{1,3}.*');
+      var semanticVersion = RegExp(r'.*\d{1,3}\.\d{1,3}\.\d{1,3}.*');
       expect(semanticVersion.hasMatch(output.messages[0]), true);
     });
 
@@ -286,24 +286,23 @@ void main() {
     String log;
 
     setUp(() async {
-      logger = new MemoryLogger();
+      logger = MemoryLogger();
 
-      app = new CliApp(logger, (config) {
-        versioner = new _MockGitVersioner();
+      app = CliApp(logger, (config) {
+        versioner = _MockGitVersioner();
         when(versioner.config).thenReturn(config);
-        when(versioner.revision).thenAnswer((_) => new Future.value(432));
-        when(versioner.versionName).thenAnswer((_) => new Future.value('432-SNAPSHOT'));
-        when(versioner.headBranchName).thenAnswer((_) => new Future.value('myBranch'));
-        when(versioner.sha1).thenAnswer((_) => new Future.value('1234567'));
-        when(versioner.allFirstBaseBranchCommits).thenAnswer((_) => new Future.value(_commits(152)));
-        when(versioner.baseBranchCommits).thenAnswer((_) => new Future.value(_commits(377)));
-        when(versioner.baseBranchTimeComponent).thenAnswer((_) => new Future.value(773));
-        when(versioner.featureBranchCommits).thenAnswer((_) => new Future.value(_commits(677)));
-        when(versioner.featureBranchTimeComponent).thenAnswer((_) => new Future.value(776));
-        when(versioner.featureBranchOrigin)
-            .thenAnswer((_) => new Future.value(new Commit('featureBranchOrigin', null)));
-        when(versioner.commits).thenAnswer((_) => new Future.value(_commits(432)));
-        when(versioner.localChanges).thenAnswer((_) => new Future.value(LocalChanges(4, 5, 6)));
+        when(versioner.revision).thenAnswer((_) => Future.value(432));
+        when(versioner.versionName).thenAnswer((_) => Future.value('432-SNAPSHOT'));
+        when(versioner.headBranchName).thenAnswer((_) => Future.value('myBranch'));
+        when(versioner.sha1).thenAnswer((_) => Future.value('1234567'));
+        when(versioner.allFirstBaseBranchCommits).thenAnswer((_) => Future.value(_commits(152)));
+        when(versioner.baseBranchCommits).thenAnswer((_) => Future.value(_commits(377)));
+        when(versioner.baseBranchTimeComponent).thenAnswer((_) => Future.value(773));
+        when(versioner.featureBranchCommits).thenAnswer((_) => Future.value(_commits(677)));
+        when(versioner.featureBranchTimeComponent).thenAnswer((_) => Future.value(776));
+        when(versioner.featureBranchOrigin).thenAnswer((_) => Future.value(Commit('featureBranchOrigin', null)));
+        when(versioner.commits).thenAnswer((_) => Future.value(_commits(432)));
+        when(versioner.localChanges).thenAnswer((_) => Future.value(LocalChanges(4, 5, 6)));
         return versioner;
       });
       await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf', '--full']);
@@ -364,7 +363,7 @@ void main() {
     });
 
     test('requires gitVersioner', () async {
-      app = new CliApp(new MemoryLogger(), (_) => null);
+      app = CliApp(MemoryLogger(), (_) => null);
       try {
         await app.process([]);
       } on AssertionError catch (e) {
@@ -376,7 +375,7 @@ void main() {
   group('initialize cli app', () {
     test("logger can't be null", () {
       try {
-        new CliApp(null, null);
+        CliApp(null, null);
       } on AssertionError catch (e) {
         expect(e.toString(), contains('logger != null'));
       }
@@ -385,9 +384,9 @@ void main() {
 }
 
 Future<MemoryLogger> _gitRevision(String args) async {
-  var logger = new MemoryLogger();
+  var logger = MemoryLogger();
   // creates CliApp without revision part
-  var app = new CliApp(logger, (_) => null);
+  var app = CliApp(logger, (_) => null);
 
   await app.process(args.split(' '));
 
@@ -397,8 +396,8 @@ Future<MemoryLogger> _gitRevision(String args) async {
 class _MockGitVersioner extends Mock implements GitVersioner {}
 
 List<Commit> _commits(int count) {
-  var now = new DateTime.now();
-  return new List(count).map((_) {
-    return new Commit("some sha1", now.toIso8601String());
+  var now = DateTime.now();
+  return List(count).map((_) {
+    return Commit("some sha1", now.toIso8601String());
   }).toList(growable: false);
 }
