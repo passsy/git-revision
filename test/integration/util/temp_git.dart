@@ -99,7 +99,7 @@ String commit(String message, DateTime date, [bool add = true]) => sh("""
     unset GIT_COMMITTER_DATE
     """);
 
-void merge(String branchToMerge, DateTime date, [bool ff = false]) => sh("""
+String merge(String branchToMerge, DateTime date, [bool ff = false]) => sh("""
     git merge${ff ? '' : ' --no-ff'} $branchToMerge --no-commit
     ${commit("Merge branch '$branchToMerge'", date)}
 """);
