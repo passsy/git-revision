@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 import 'util/temp_git.dart';
 
-final DateTime initTime = DateTime(2017, DateTime.january, 10);
+final DateTime initTime = DateTime.utc(2017, DateTime.january, 10);
 
 void main() {
   group('initialize', () {
@@ -97,7 +97,7 @@ void main() {
       var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 0\n'));
-      expect(out, contains('versionName: 0_another_root+1_60acfd6\n'));
+      expect(out, contains('versionName: 0_another_root+1_2c8318a\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: another_root\n'));
       expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
@@ -144,7 +144,7 @@ void main() {
       var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 0\n'));
-      expect(out, contains('versionName: 0_another_root+3_8059b5b\n'));
+      expect(out, contains('versionName: 0_another_root+3_c3181a8\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: another_root\n'));
       expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
@@ -176,7 +176,7 @@ void main() {
       var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 1\n'));
-      expect(out, contains('versionName: 1_5c0c7da\n'));
+      expect(out, contains('versionName: 1_4814a87\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
       expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 1\n'));
@@ -206,7 +206,7 @@ void main() {
       var out = await git.revision(['--full']);
 
       expect(out, contains('versionCode: 6\n'));
-      expect(out, contains('versionName: 6_d8dd0e3\n'));
+      expect(out, contains('versionName: 6_937de8c\n'));
       expect(out, contains('baseBranch: master\n'));
       expect(out, contains('currentBranch: master\n'));
       expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
@@ -254,7 +254,7 @@ void main() {
       expect(out2, contains('baseBranchTimeComponent: 6\n'));
       expect(out2, contains('baseBranchCommitCount: 5\n'));
       expect(out2, contains('versionCode: 11\n'));
-      expect(out2, contains('versionName: 11_b0c09de\n'));
+      expect(out2, contains('versionName: 11_7810fd1\n'));
 
       await git.run(name: 'go back to commit before merge', script: sh("""
           git checkout master
@@ -264,7 +264,7 @@ void main() {
       // same revision as before
       var out3 = await git.revision(['--full']);
       expect(out3, contains('versionCode: 3\n'));
-      expect(out3, contains('versionName: 3_5dc00fd\n'));
+      expect(out3, contains('versionName: 3_046e78b\n'));
     });
   });
 
@@ -298,11 +298,11 @@ void main() {
       await git.run(name: 'delete feature branch and stay on detached head', script: sh("""
           git checkout master
           git branch -D featureB
-          git checkout 7f1417d
+          git checkout f73f20d
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 3+2_7f1417d\n'));
+      expect(out, contains('versionName: 3+2_f73f20d\n'));
     });
 
     test("feature branch still has +commits after merge in master", () async {
@@ -327,7 +327,7 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 3_featureB+2_7f1417d\n'));
+      expect(out, contains('versionName: 3_featureB+2_f73f20d\n'));
 
       await git.run(name: 'continue work on master and merge featureB', script: sh("""
           git checkout master
@@ -343,7 +343,7 @@ void main() {
 
       // back on featureB the previous output should not change
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 3_featureB+2_7f1417d\n'));
+      expect(out2, contains('versionName: 3_featureB+2_f73f20d\n'));
     });
 
     test("git flow - baseBranch=develop - merge develop -> master increases revision", () async {
@@ -414,7 +414,7 @@ void main() {
       // master should be only +2 ahead which are the two merge commits (develop -> master)
       // master will always +1 ahead of develop even when merging (master -> develop)
       var out2 = await git.revision(['--full', '--baseBranch', 'develop']);
-      expect(out2, contains('versionName: 17_master+2_cdd5b32\n'));
+      expect(out2, contains('versionName: 17_master+2_127e54e\n'));
     });
   });
 
@@ -449,14 +449,14 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 2_featureB+2_e121797\n'));
+      expect(out, contains('versionName: 2_featureB+2_3067399\n'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 2_featureB+2_e121797\n'));
+      expect(out2, contains('versionName: 2_featureB+2_3067399\n'));
     });
 
     test("master only on remote which is not called origin", () async {
@@ -483,14 +483,14 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 2_featureB+2_e121797\n'));
+      expect(out, contains('versionName: 2_featureB+2_3067399\n'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 2_featureB+2_e121797\n'));
+      expect(out2, contains('versionName: 2_featureB+2_3067399\n'));
     });
 
     test("master only on one remote - multiple remotes", () async {
@@ -521,14 +521,14 @@ void main() {
           """));
 
       var out = await git.revision(['--full']);
-      expect(out, contains('versionName: 2_featureB+1_4bc04e2'));
+      expect(out, contains('versionName: 2_featureB+1_e45ede3'));
 
       // now master branch is only available on remote
       await git.run(name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       var out2 = await git.revision(['--full']);
-      expect(out2, contains('versionName: 2_featureB+1_4bc04e2\n'));
+      expect(out2, contains('versionName: 2_featureB+1_e45ede3\n'));
     });
   });
 }
