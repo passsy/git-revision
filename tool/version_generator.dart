@@ -5,7 +5,7 @@ import 'package:source_gen/source_gen.dart';
 import 'package:yaml/yaml.dart';
 import 'package:dart_style/dart_style.dart';
 
-Builder versionNameBuilder(BuilderOptions options) => new PartBuilder([new VersionGenerator()]);
+Builder versionNameBuilder(BuilderOptions options) => PartBuilder([VersionGenerator()]);
 
 class VersionGenerator extends Generator {
   @override
@@ -15,15 +15,15 @@ class VersionGenerator extends Generator {
       return null;
     }
 
-    var content = await buildStep.readAsString(new AssetId(buildStep.inputId.package, 'pubspec.yaml'));
+    var content = await buildStep.readAsString(AssetId(buildStep.inputId.package, 'pubspec.yaml'));
 
     var yaml = loadYaml(content) as Map;
 
     var versionString = yaml['version'] as String;
 
-    var dartfmt = new DartFormatter();
+    var dartfmt = DartFormatter();
     return dartfmt.format('''
-           const versionName = '$versionString';
+           const String versionName = '$versionString';
            ''');
   }
 }

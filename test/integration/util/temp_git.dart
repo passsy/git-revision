@@ -29,7 +29,7 @@ class TempGit {
   Future<Null> setup() async {
     root = await io.Directory.systemTemp.createTemp('git-revision-integration-test');
     var path = "${root.path}${io.Platform.pathSeparator}repo";
-    repo = await new io.Directory(path).create();
+    repo = await io.Directory(path).create();
   }
 
   Future<Null> cleanup() async {
@@ -43,10 +43,10 @@ class TempGit {
     var namePostfix = name != null ? "_$name".replaceAll(" ", "_") : "";
     var scriptName = "script${_scriptCount++}$namePostfix.sh";
     var path = "${root.path}${io.Platform.pathSeparator}$scriptName";
-    var scriptFile = await new io.File(path).create();
+    var scriptFile = await io.File(path).create();
     var scriptText = sh("""
         # Script ${_scriptCount - 1} '$name'
-        # Created at ${new DateTime.now().toIso8601String()}
+        # Created at ${DateTime.now().toIso8601String()}
         $script
         """);
     await scriptFile.writeAsString(scriptText);
@@ -64,13 +64,13 @@ class TempGit {
 
   Future<String> revision(List<String> args, [io.Directory repo]) async {
     repo ??= this.repo;
-    var logger = new MemoryLogger();
-    var cliApp = new CliApp.production(logger);
+    var logger = MemoryLogger();
+    var cliApp = CliApp.production(logger);
     await cliApp.process(['-C', '${repo.path}']..addAll(args));
     if (logger.errors.isNotEmpty) {
       print("Error!");
       print(logger.errors);
-      throw new Exception("CliApp crashed");
+      throw Exception("CliApp crashed");
     }
     var messages = logger.messages.join('\n');
     printOnFailure("\n> git revision ${args.join(" ")}");
@@ -80,7 +80,7 @@ class TempGit {
 }
 
 Future<TempGit> makeTempGit() async {
-  var tempGit = new TempGit();
+  var tempGit = TempGit();
   await tempGit.setup();
   printOnFailure("cd ${tempGit.repo.path} && git log --pretty=fuller");
   addTearDown(() {
@@ -89,9 +89,9 @@ Future<TempGit> makeTempGit() async {
   return tempGit;
 }
 
-const Duration hour = const Duration(hours: 1);
-const Duration day = const Duration(days: 1);
-const Duration minutes = const Duration(minutes: 1);
+const Duration hour = Duration(hours: 1);
+const Duration day = Duration(days: 1);
+const Duration minutes = Duration(minutes: 1);
 
 String commit(String message, DateTime date, [bool add = true]) => sh("""
     export GIT_COMMITTER_DATE="${date.toIso8601String()}"
@@ -99,7 +99,7 @@ String commit(String message, DateTime date, [bool add = true]) => sh("""
     unset GIT_COMMITTER_DATE
     """);
 
-void merge(String branchToMerge, DateTime date, [bool ff = false]) => sh("""
+String merge(String branchToMerge, DateTime date, [bool ff = false]) => sh("""
     git merge${ff ? '' : ' --no-ff'} $branchToMerge --no-commit
     ${commit("Merge branch '$branchToMerge'", date)}
 """);
@@ -109,7 +109,7 @@ void _throwOnError(io.ProcessResult processResult) {
   if (processResult.exitCode != 0) {
     io.stderr.write("Exit code: ${processResult.exitCode}");
     io.stderr.write(processResult.stderr);
-    throw new io.ProcessException("", [], processResult.stderr, processResult.exitCode);
+    throw io.ProcessException("", [], processResult.stderr, processResult.exitCode);
   }
 }
 

@@ -18,7 +18,7 @@ class CliApp {
       : assert(logger != null),
         assert(versionerProvider != null);
 
-  CliApp.production([CliLogger logger = const CliLogger()]) : this(logger, (config) => new GitVersioner(config));
+  CliApp.production([CliLogger logger = const CliLogger()]) : this(logger, (config) => GitVersioner(config));
 
   Future<Null> process(List<String> args) async {
     final cliArgs = parseCliArgs(args);
@@ -61,7 +61,7 @@ class CliApp {
     }
   }
 
-  static final _cliArgParser = new ArgParser()
+  static final _cliArgParser = ArgParser()
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.')
     ..addFlag('version', abbr: 'v', help: 'Shows the version information of git revision', negatable: false)
     ..addOption('context',
@@ -93,7 +93,7 @@ class CliApp {
   static GitRevisionCliArgs parseCliArgs(List<String> args) {
     ArgResults argResults = _cliArgParser.parse(args);
 
-    var parsedCliArgs = new GitRevisionCliArgs();
+    var parsedCliArgs = GitRevisionCliArgs();
 
     parsedCliArgs.showHelp = argResults['help'];
     parsedCliArgs.showVersion = argResults['version'];
@@ -108,13 +108,13 @@ class CliApp {
         parsedCliArgs.revision = rest;
       }
     } else if (argResults.rest.length > 1) {
-      throw new ArgError('expected only one revision argument, found ${argResults.rest.length}: ${argResults.rest}');
+      throw ArgError('expected only one revision argument, found ${argResults.rest.length}: ${argResults.rest}');
     }
 
     final String rawName = argResults['name'];
     if (rawName != null) {
       // replace illegal chars with underscore
-      String safeName = rawName.replaceAll(new RegExp(r'[^\w_\-\/]+'), '_').replaceAll('__', '_');
+      String safeName = rawName.replaceAll(RegExp(r'[^\w_\-\/]+'), '_').replaceAll('__', '_');
 
       // trim underscore at start and end
       if (safeName[0] == '_') {
@@ -137,7 +137,7 @@ class CliApp {
     try {
       return int.parse(raw);
     } on FormatException {
-      throw new ArgError("$name is not a integer '$raw'");
+      throw ArgError("$name is not a integer '$raw'");
     }
   }
 
@@ -170,8 +170,7 @@ class GitRevisionCliArgs {
   String toString() =>
       'GitRevisionCliArgs{helpFlag: $showHelp, versionFlag: $showVersion, baseBranch: $baseBranch, repoPath: $repoPath, yearFactor: $yearFactor, stopDebounce: $stopDebounce}';
 
-  GitVersionerConfig toConfig() =>
-      new GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, name, revision);
+  GitVersionerConfig toConfig() => GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, name, revision);
 
   @override
   bool operator ==(Object other) =>

@@ -21,7 +21,7 @@ class GitClient {
 
     return result.split('\n\n').where((c) => c.isNotEmpty).map((rawCommit) {
       var lines = rawCommit.split('\n');
-      return new Commit(lines[0].replaceFirst('commit ', ''), lines[1]);
+      return Commit(lines[0].replaceFirst('commit ', ''), lines[1]);
     }).toList(growable: false);
   }
 
@@ -32,8 +32,8 @@ class GitClient {
       return null;
     }
     assert(() {
-      if (hash.isEmpty) throw new ArgumentError("sha1 is empty ''");
-      if (hash.split('\n').length != 1) throw new ArgumentError("sha1 is multiline '$hash'");
+      if (hash.isEmpty) throw ArgumentError("sha1 is empty ''");
+      if (hash.split('\n').length != 1) throw ArgumentError("sha1 is multiline '$hash'");
       return true;
     }());
 
@@ -49,7 +49,7 @@ class GitClient {
     if (name.isEmpty) return null;
 
     assert(() {
-      if (name.split('\n').length != 1) throw new ArgumentError("branch name is multiline '$name'");
+      if (name.split('\n').length != 1) throw ArgumentError("branch name is multiline '$name'");
       return true;
     }());
     return name;
@@ -97,7 +97,7 @@ class GitClient {
     text = text?.trim();
     if (emptyResultIsError) {
       if (text == null || text.isEmpty) {
-        throw new ProcessException('git', argList, "returned nothing");
+        throw ProcessException('git', argList, "returned nothing");
       }
     }
     return text;
@@ -125,10 +125,10 @@ LocalChanges _parseDiffShortStat(String text) {
       deletions = _startingNumber(part) ?? 0;
     }
   }
-  return new LocalChanges(filesChanges, additions, deletions);
+  return LocalChanges(filesChanges, additions, deletions);
 }
 
-final _numberRegEx = new RegExp("(\\d+).*");
+final _numberRegEx = RegExp("(\\d+).*");
 
 /// returns the int of a string it starts with
 int _startingNumber(String text) {
@@ -160,7 +160,7 @@ class _GitClientCache extends GitClient with FutureCacheMixin {
   }
 
   @override
-  Future<String> git(String args, {bool emptyResultIsError: true}) {
+  Future<String> git(String args, {bool emptyResultIsError = true}) {
     var name = 'git $args -- $emptyResultIsError';
     return cache(() => super.git(args, emptyResultIsError: emptyResultIsError), name);
   }
