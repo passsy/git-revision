@@ -5,7 +5,13 @@ class Commit {
   String rawDate;
   DateTime parsedDate;
 
-  DateTime get date => parsedDate ??= DateTime.parse(rawDate);
+  DateTime get date {
+    try {
+      parsedDate ??= DateTime.parse(rawDate);
+    } catch (ex, stack) {
+      throw Exception("Could not parse commit date '$rawDate'. Is git up-to-date? Minimum git 2.2.0 is required.");
+    }
+  }
 
   @override
   String toString() {
