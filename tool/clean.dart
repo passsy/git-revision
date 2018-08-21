@@ -1,14 +1,9 @@
 import 'dart:async';
-
 import 'dart:io';
+import 'util/process.dart';
 
 Future<Null> main(List<String> args) async {
-  Process p = await Process.start('pub', ['run', 'build_runner', 'clean']).then((process) {
-    stdout.addStream(process.stdout);
-    stderr.addStream(process.stderr);
-
-    return process;
-  });
-
-  exit(await p.exitCode);
+  await sh("pub run build_runner clean");
+  Directory("out").deleteSync(recursive: true);
+  Directory(".dart_tool").deleteSync(recursive: true);
 }
