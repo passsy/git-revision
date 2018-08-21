@@ -5,7 +5,9 @@ class Commit {
   String rawDate;
   DateTime parsedDate;
 
-  DateTime get date => parsedDate ??= DateTime.parse(rawDate);
+  DateTime get date {
+    return parsedDate ??= DateTime.fromMillisecondsSinceEpoch(int.parse(rawDate) * 1000);
+  }
 
   @override
   String toString() {
