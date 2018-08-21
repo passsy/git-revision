@@ -13,11 +13,8 @@ dependencies:
 dev_dependencies:
   test: '^1.2.0'
   mockito: '^3.0.0-beta+1'
-  build: '^0.12.6'
-  source_gen: '^0.8.1+1'
-  build_config: '^0.3.0'
-  build_runner: '^0.9.0'
   dart_style: '^1.1.2'
+  path: ^1.6.2
 
 executables:
   # a valid dart filename doesn't contain a dash -> remapping

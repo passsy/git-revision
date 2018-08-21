@@ -1,13 +1,46 @@
 import 'dart:async';
 import 'dart:io';
+
+import 'package:yaml/yaml.dart';
+import 'package:dart_style/dart_style.dart';
+import 'package:path/path.dart' as path;
+
 import 'util/process.dart';
 
 Future<Null> main(List<String> args) async {
-  await sh("pub run build_runner build --delete-conflicting-outputs");
-  final outDir = Directory("out");
-  if (!outDir.existsSync()) outDir.createSync();
+  print("Running build script");
+  await generateBuildFile();
   await sh("dart --snapshot=out/git-revision bin/git_revision.dart");
 
   var outFile = File("out/git-revision");
-  print("created ${outFile.absolute.path}");
+  assert(outFile.existsSync());
+  print("\nSUCCESS\n");
+  print("snapshot at ${outFile.absolute.path}");
+}
+
+Future generateBuildFile() async {
+  print("Building generated source");
+  final content = await File('pubspec.yaml').readAsString();
+  final yaml = loadYaml(content) as Map;
+  final version = yaml['version'] as String;
+
+  final files = Directory("lib").listSync();
+  final sourceFile = files.firstWhere((it) => path.basename(it.path) == 'cli_app.dart');
+  final partFile = File(sourceFile.path.replaceAll(".dart", ".g.dart"));
+
+  final source = DartFormatter().format('''
+      // GENERATED CODE - DO NOT MODIFY BY HAND
+
+      part of 'cli_app.dart';
+
+      // **************************************************************************
+      // BuildConfig
+      // **************************************************************************
+
+      const String versionName = '$version';
+      ''');
+
+  await partFile.writeAsString(source);
+
+  print("wrote ${partFile.path}");
 }
