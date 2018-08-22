@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-import 'util/process.dart';
 
-Future<Null> main(List<String> args) async {
-  await sh("pub run build_runner clean");
-  Directory("out").deleteSync(recursive: true);
-  Directory(".dart_tool").deleteSync(recursive: true);
+Future<Null> main(List<String> args) => clean();
+
+Future clean() async {
+  final out = Directory("out");
+  if (out.existsSync()) out.deleteSync(recursive: true);
+
+  final dart_tool = Directory(".dart_tool");
+  if (dart_tool.existsSync()) dart_tool.deleteSync(recursive: true);
 }

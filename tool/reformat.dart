@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-Future<Null> main(List<String> args) async {
+Future<Null> main(List<String> args) => reformat();
+
+Future reformat() async {
   Process p =
       await Process.start('dartfmt', ['--set-exit-if-changed', '--fix', '-l 120', '-w', 'bin', 'lib', 'test', 'tool'])
           .then((process) {
@@ -19,5 +21,8 @@ Future<Null> main(List<String> args) async {
     return process;
   });
 
-  exit(await p.exitCode);
+  var code = await p.exitCode;
+  if (code != 0) {
+    exit(code);
+  }
 }
