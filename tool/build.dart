@@ -14,6 +14,7 @@ Future<Null> main(List<String> args) async {
 
   var outFile = File("out/git-revision");
   assert(outFile.existsSync());
+  await sh("chmod 755 ${outFile.path}", quiet: false);
   print("\nSUCCESS\n");
   print("snapshot at ${outFile.absolute.path}");
 }
