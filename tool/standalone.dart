@@ -10,8 +10,6 @@ import 'package:http/http.dart' as http;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'build.dart';
-import 'clean.dart';
-import 'reformat.dart';
 import 'util/archive.dart';
 import 'util/utils.dart';
 
@@ -20,8 +18,6 @@ Future main(List<String> args) => standalone();
 
 /// Big thanks to @nex3 and the https://github.com/sass/dart-sass project where the this process first appeared
 Future standalone() async {
-  await reformat();
-  await clean();
   await build();
 
   final platforms = ["linux", "macos", "windows"];
