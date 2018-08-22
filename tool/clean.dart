@@ -1,14 +1,15 @@
-import 'dart:async';
-
 import 'dart:io';
 
-Future<Null> main(List<String> args) async {
-  Process p = await Process.start('pub', ['run', 'build_runner', 'clean']).then((process) {
-    stdout.addStream(process.stdout);
-    stderr.addStream(process.stderr);
+void main(List<String> args) => clean();
 
-    return process;
-  });
+void clean() {
+  cleanupDir("build");
+  cleanupDir(".dart_tool");
+}
 
-  exit(await p.exitCode);
+void cleanupDir(String path) {
+  var directory = Directory(path);
+  if (directory.existsSync()) {
+    directory.deleteSync(recursive: true);
+  }
 }
