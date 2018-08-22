@@ -6,11 +6,7 @@ class Commit {
   DateTime parsedDate;
 
   DateTime get date {
-    try {
-      parsedDate ??= DateTime.parse(rawDate);
-    } catch (ex, stack) {
-      throw Exception("Could not parse commit date '$rawDate'. Is git up-to-date? Minimum git 2.2.0 is required.");
-    }
+    return parsedDate ??= DateTime.fromMillisecondsSinceEpoch(int.parse(rawDate) * 1000);
   }
 
   @override
