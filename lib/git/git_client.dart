@@ -15,7 +15,7 @@ class GitClient {
 
   Future<List<Commit>> revList(String revision, {bool firstParentOnly = false}) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-    String result = await git('rev-list --pretty=%cI%n${firstParentOnly ? ' --first-parent' : ''} $revision',
+    String result = await git('rev-list --pretty=%ct%n${firstParentOnly ? ' --first-parent' : ''} $revision',
         emptyResultIsError: false);
     if (result == null) return [];
 
