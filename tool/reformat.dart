@@ -3,7 +3,7 @@ import 'dart:io';
 
 Future<Null> main(List<String> args) => reformat();
 
-Future reformat() async {
+Future<Null> reformat() async {
   Process p =
       await Process.start('dartfmt', ['--set-exit-if-changed', '--fix', '-l 120', '-w', 'bin', 'lib', 'test', 'tool'])
           .then((process) {

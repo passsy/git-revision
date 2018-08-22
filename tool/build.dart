@@ -9,7 +9,7 @@ import 'util/process.dart';
 
 Future<Null> main(List<String> args) => build();
 
-Future build() async {
+Future<Null> build() async {
   await buildGeneratedSource();
 
   print("Building snapshot");
@@ -23,7 +23,7 @@ Future build() async {
   print("snapshot at ${outFile.absolute.path}");
 }
 
-Future buildGeneratedSource() async {
+Future<Null> buildGeneratedSource() async {
   print("Building generated source");
   final content = await File('pubspec.yaml').readAsString();
   final yaml = loadYaml(content) as Map;

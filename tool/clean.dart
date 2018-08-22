@@ -1,12 +1,15 @@
-import 'dart:async';
 import 'dart:io';
 
-Future<Null> main(List<String> args) => clean();
+void main(List<String> args) => clean();
 
-Future clean() async {
-  final out = Directory("out");
-  if (out.existsSync()) out.deleteSync(recursive: true);
+void clean() {
+  cleanupDir("build");
+  cleanupDir(".dart_tool");
+}
 
-  final dart_tool = Directory(".dart_tool");
-  if (dart_tool.existsSync()) dart_tool.deleteSync(recursive: true);
+void cleanupDir(String path) {
+  var directory = Directory(path);
+  if (directory.existsSync()) {
+    directory.deleteSync(recursive: true);
+  }
 }
