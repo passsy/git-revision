@@ -18,6 +18,7 @@ import 'util/utils.dart';
 /// Generates the standalone packages
 Future main(List<String> args) => standalone();
 
+/// Big thanks to @nex3 and the https://github.com/sass/dart-sass project where the this process first appeared
 Future standalone() async {
   await reformat();
   await clean();
