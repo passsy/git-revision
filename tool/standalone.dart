@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:archive/archive.dart';
 import 'package:http/http.dart' as http;
@@ -11,6 +12,7 @@ import 'package:pub_semver/pub_semver.dart';
 
 import 'build.dart';
 import 'util/archive.dart';
+import 'util/process.dart';
 import 'util/utils.dart';
 
 /// Generates the standalone packages
@@ -91,14 +93,29 @@ class StandaloneBundler {
   Future<void> _writeToDisk(final Archive archive) async {
     final version = await projectVersion();
     final prefix = 'build/git_revision-$version-$os-$architecture';
+    final _testDir = Directory("build/test");
+    if (!await _testDir.exists()) await _testDir.create();
+
     if (os == 'windows') {
-      final output = "$prefix.zip";
-      print("Saving $output...");
-      await File(output).writeAsBytes(ZipEncoder().encode(archive));
+      final out = File("$prefix.zip");
+      if (out.existsSync()) out.deleteSync();
+      await out.writeAsBytes(ZipEncoder().encode(archive));
+
+      // verify extraction works
+      print("Verifying ${out.path}...");
+      final testDir = Directory("test${DateTime.now().microsecondsSinceEpoch}")..createSync();
+      await sh("unzip ${out.path} -d ${testDir.path}", quiet: true);
+      testDir.deleteSync(recursive: true);
     } else {
-      final output = "$prefix.tar.gz";
-      print("Saving $output...");
-      await File(output).writeAsBytes(GZipEncoder().encode(TarEncoder().encode(archive)));
+      final out = File("$prefix.tar.gz");
+      if (out.existsSync()) out.deleteSync();
+      await out.writeAsBytes(GZipEncoder().encode(TarEncoder().encode(archive)));
+
+      // verify extraction works
+      print("Verifying ${out.path}...");
+      final testDir = Directory("test${DateTime.now().microsecondsSinceEpoch}")..createSync();
+      await sh("tar -xvzf ${out.path} -C ${testDir.path}", quiet: true);
+      testDir.deleteSync(recursive: true);
     }
   }
 }
