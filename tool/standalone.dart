@@ -42,7 +42,7 @@ class StandaloneBundler {
   Future bundle() async {
     final sdk = await _downloadDartSdk();
     final archive = await _bundleArchive(sdk);
-    return await _writeToDisk(archive);
+    await _writeToDisk(archive);
   }
 
   Future<Archive> _downloadDartSdk() async {
