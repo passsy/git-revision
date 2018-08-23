@@ -1,5 +1,5 @@
 name: git_revision
-version: 0.5.1
+version: 0.6.0
 description: Revision calculator for git projects
 #homepage: https://pascalwelsch.com
 author: Pascal Welsch <pascal.welsch@gmail.com>
