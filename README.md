@@ -1,6 +1,6 @@
 # git revision
 
-Work in progress...
+Git extension to generate a meaningful, human readable revision for each commit in a git repository. 
 
 ## Usage
 
