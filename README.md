@@ -73,6 +73,7 @@ git revision creates a useful revision for your project beyond 'git describe'
 -d, --stopDebounce    time between two commits which are further apart than this stopDebounce (in hours) will not be included into the timeComponent. A project on hold for a few months will therefore not increase the revision drastically when development starts again.
                       (defaults to "48")
 
+-n, --name            a human readable name and identifier of a revision ('73_<name>+21_996321c'). Can be anything which gives the revision more meaning i.e. the number of the PullRequest when building on CI. Allowed characters: [a-zA-Z0-9_-/] any letter, digits, underscore, dash and slash. Invalid characters will be removed.
     --full            shows full information about the current revision and extracted information
 ```
 
