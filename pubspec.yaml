@@ -1,8 +1,6 @@
 name: git_revision
 version: 0.6.0
 description: Revision calculator for git projects
-#homepage: https://pascalwelsch.com
-author: Pascal Welsch <pascal.welsch@gmail.com>
 
 environment:
   sdk: '>=2.0.0-dev.61.0 <3.0.0'
