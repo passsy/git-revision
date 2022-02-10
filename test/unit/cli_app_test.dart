@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:git_revision/cli_app.dart';
 import 'package:git_revision/git/commit.dart';
+import 'package:git_revision/git/git_client.dart';
 import 'package:git_revision/git/local_changes.dart';
 import 'package:git_revision/git_revision.dart';
 import 'package:mockito/mockito.dart';
@@ -13,88 +14,88 @@ void main() {
   group('parse args', () {
     group('help', () {
       test('default', () async {
-        var parsed = CliApp.parseCliArgs(['']);
+        final parsed = CliApp.parseCliArgs(['']);
         expect(parsed.showHelp, false);
       });
       test('add flag', () async {
-        var parsed = CliApp.parseCliArgs(['--help']);
+        final parsed = CliApp.parseCliArgs(['--help']);
         expect(parsed.showHelp, true);
       });
       test('add flag #2', () async {
-        var parsed = CliApp.parseCliArgs(['-h']);
+        final parsed = CliApp.parseCliArgs(['-h']);
         expect(parsed.showHelp, true);
       });
     });
 
     group('version', () {
       test('default', () async {
-        var parsed = CliApp.parseCliArgs(['']);
+        final parsed = CliApp.parseCliArgs(['']);
         expect(parsed.showVersion, false);
       });
       test('add flag', () async {
-        var parsed = CliApp.parseCliArgs(['--version']);
+        final parsed = CliApp.parseCliArgs(['--version']);
         expect(parsed.showVersion, true);
       });
       test('add flag #2', () async {
-        var parsed = CliApp.parseCliArgs(['-v']);
+        final parsed = CliApp.parseCliArgs(['-v']);
         expect(parsed.showVersion, true);
       });
     });
 
     group('context', () {
       test('default', () async {
-        var parsed = CliApp.parseCliArgs(['']);
+        final parsed = CliApp.parseCliArgs(['']);
         expect(parsed.repoPath, null);
       });
 
       test('set context', () async {
-        var parsed = CliApp.parseCliArgs(['--context', '../Other\ Project/']);
-        expect(parsed.repoPath, '../Other\ Project/');
+        final parsed = CliApp.parseCliArgs(['--context', '../Other Project/']);
+        expect(parsed.repoPath, '../Other Project/');
       });
       test('set context #2', () async {
-        var parsed = CliApp.parseCliArgs(['--context=../Other\ Project/']);
-        expect(parsed.repoPath, '../Other\ Project/');
+        final parsed = CliApp.parseCliArgs(['--context=../Other Project/']);
+        expect(parsed.repoPath, '../Other Project/');
       });
 
       test('set context with abbr', () async {
-        var parsed = CliApp.parseCliArgs(['-C', '../Other\ Project/']);
-        expect(parsed.repoPath, '../Other\ Project/');
+        final parsed = CliApp.parseCliArgs(['-C', '../Other Project/']);
+        expect(parsed.repoPath, '../Other Project/');
       });
 
       test('set context with abbr #2', () async {
-        var parsed = CliApp.parseCliArgs(['-C../Other\ Project/']);
-        expect(parsed.repoPath, '../Other\ Project/');
+        final parsed = CliApp.parseCliArgs(['-C../Other Project/']);
+        expect(parsed.repoPath, '../Other Project/');
       });
     });
 
     group('baseBranch', () {
       test('default', () async {
-        var parsed = CliApp.parseCliArgs(['']);
-        expect(parsed.baseBranch, GitVersioner.DEFAULT_BRANCH);
+        final parsed = CliApp.parseCliArgs(['']);
+        expect(parsed.baseBranch, GitVersioner.defaultBranch);
       });
 
       test('set baseBranch', () async {
-        var parsed = CliApp.parseCliArgs(['--baseBranch', 'develop']);
+        final parsed = CliApp.parseCliArgs(['--baseBranch', 'develop']);
         expect(parsed.baseBranch, 'develop');
       });
       test('set baseBranch #2', () async {
-        var parsed = CliApp.parseCliArgs(['--baseBranch=develop']);
+        final parsed = CliApp.parseCliArgs(['--baseBranch=develop']);
         expect(parsed.baseBranch, 'develop');
       });
 
       test('set baseBranch with abbr', () async {
-        var parsed = CliApp.parseCliArgs(['-b', 'develop']);
+        final parsed = CliApp.parseCliArgs(['-b', 'develop']);
         expect(parsed.baseBranch, 'develop');
       });
 
       test('set baseBranch with abbr #2', () async {
-        var parsed = CliApp.parseCliArgs(['-bdevelop']);
+        final parsed = CliApp.parseCliArgs(['-bdevelop']);
         expect(parsed.baseBranch, 'develop');
       });
     });
 
     test('set stopDebounce', () async {
-      var parsed = CliApp.parseCliArgs(['-d 1200']);
+      final parsed = CliApp.parseCliArgs(['-d 1200']);
       expect(parsed.stopDebounce, 1200);
     });
 
@@ -110,26 +111,26 @@ void main() {
 
     group('yearFactor', () {
       test('default', () async {
-        var parsed = CliApp.parseCliArgs(['']);
-        expect(parsed.yearFactor, GitVersioner.DEFAULT_YEAR_FACTOR);
+        final parsed = CliApp.parseCliArgs(['']);
+        expect(parsed.yearFactor, GitVersioner.defaultYearFactor);
       });
 
       test('set yearFactor', () async {
-        var parsed = CliApp.parseCliArgs(['--yearFactor', '1200']);
+        final parsed = CliApp.parseCliArgs(['--yearFactor', '1200']);
         expect(parsed.yearFactor, 1200);
       });
       test('set yearFactor #2', () async {
-        var parsed = CliApp.parseCliArgs(['--yearFactor=1200']);
+        final parsed = CliApp.parseCliArgs(['--yearFactor=1200']);
         expect(parsed.yearFactor, 1200);
       });
 
       test('set yearFactor with abbr', () async {
-        var parsed = CliApp.parseCliArgs(['-y', '1200']);
+        final parsed = CliApp.parseCliArgs(['-y', '1200']);
         expect(parsed.yearFactor, 1200);
       });
 
       test('set yearFactor with abbr #2', () async {
-        var parsed = CliApp.parseCliArgs(['-y1200']);
+        final parsed = CliApp.parseCliArgs(['-y1200']);
         expect(parsed.yearFactor, 1200);
       });
 
@@ -146,26 +147,26 @@ void main() {
 
     group('stopDebounce', () {
       test('default', () async {
-        var parsed = CliApp.parseCliArgs(['']);
-        expect(parsed.stopDebounce, GitVersioner.DEFAULT_STOP_DEBOUNCE);
+        final parsed = CliApp.parseCliArgs(['']);
+        expect(parsed.stopDebounce, GitVersioner.defaultStopDebounce);
       });
 
       test('set stopDebounce', () async {
-        var parsed = CliApp.parseCliArgs(['--stopDebounce', '96']);
+        final parsed = CliApp.parseCliArgs(['--stopDebounce', '96']);
         expect(parsed.stopDebounce, 96);
       });
       test('set stopDebounce #2', () async {
-        var parsed = CliApp.parseCliArgs(['--stopDebounce=96']);
+        final parsed = CliApp.parseCliArgs(['--stopDebounce=96']);
         expect(parsed.stopDebounce, 96);
       });
 
       test('set stopDebounce with abbr', () async {
-        var parsed = CliApp.parseCliArgs(['-d', '96']);
+        final parsed = CliApp.parseCliArgs(['-d', '96']);
         expect(parsed.stopDebounce, 96);
       });
 
       test('set stopDebounce with abbr #2', () async {
-        var parsed = CliApp.parseCliArgs(['-d96']);
+        final parsed = CliApp.parseCliArgs(['-d96']);
         expect(parsed.stopDebounce, 96);
       });
 
@@ -182,22 +183,22 @@ void main() {
 
     group('revision', () {
       test('default', () async {
-        var parsed = CliApp.parseCliArgs(['']);
+        final parsed = CliApp.parseCliArgs(['']);
         expect(parsed.revision, 'HEAD');
       });
 
       test('set rev', () async {
-        var parsed = CliApp.parseCliArgs(['someBranch']);
+        final parsed = CliApp.parseCliArgs(['someBranch']);
         expect(parsed.revision, 'someBranch');
       });
 
       test('set rev before options', () async {
-        var parsed = CliApp.parseCliArgs(['someBranch', '--baseBranch=asdf']);
+        final parsed = CliApp.parseCliArgs(['someBranch', '--baseBranch=asdf']);
         expect(parsed.revision, 'someBranch');
       });
 
       test('set rev after options', () async {
-        var parsed = CliApp.parseCliArgs(['--baseBranch=asdf', 'someBranch']);
+        final parsed = CliApp.parseCliArgs(['--baseBranch=asdf', 'someBranch']);
         expect(parsed.revision, 'someBranch');
       });
 
@@ -213,32 +214,34 @@ void main() {
   });
 
   group('--help', () {
-    MemoryLogger output;
+    late MemoryLogger output;
 
     setUp(() async {
       output = await _gitRevision("--help");
     });
 
     test('shows intro text', () async {
-      expect(output.messages.join(),
-          startsWith("git revision creates a useful revision for your project beyond 'git describe'"));
+      expect(
+        output.messages.join(),
+        startsWith("git revision creates a useful revision for your project beyond 'git describe'"),
+      );
     });
 
     test('shows usage information', () async {
-      var usageMessage = output.messages.join();
+      final usageMessage = output.messages.join();
       expect(usageMessage, contains('--help'));
       expect(usageMessage, contains('--version'));
     });
 
     test('all fields are filled', () async {
-      for (var msg in output.messages) {
+      for (final msg in output.messages) {
         expect(msg, isNot(contains('null')));
       }
     });
   });
 
   group('--version', () {
-    MemoryLogger output;
+    late MemoryLogger output;
 
     setUp(() async {
       output = await _gitRevision("--version");
@@ -249,32 +252,32 @@ void main() {
       expect(output.messages[0], contains('Version'));
 
       // contains a semantic version string (simplified)
-      var semanticVersion = RegExp(r'.*\d{1,3}\.\d{1,3}\.\d{1,3}.*');
+      final semanticVersion = RegExp(r'.*\d{1,3}\.\d{1,3}\.\d{1,3}.*');
       expect(semanticVersion.hasMatch(output.messages[0]), true);
     });
 
     test('all fields are filled', () async {
-      for (var msg in output.messages) {
+      for (final msg in output.messages) {
         expect(msg, isNot(contains('null')));
       }
     });
   });
   group('global args order', () {
     test('--help outranks --version', () async {
-      var version = await _gitRevision("--help");
-      var both = await _gitRevision("--version --help");
+      final version = await _gitRevision("--help");
+      final both = await _gitRevision("--version --help");
       expect(both, equals(version));
     });
 
     test('--help outranks revision', () async {
-      var version = await _gitRevision("--help");
-      var both = await _gitRevision("HEAD --help");
+      final version = await _gitRevision("--help");
+      final both = await _gitRevision("HEAD --help");
       expect(both, equals(version));
     });
 
     test('--version outranks revision', () async {
-      var version = await _gitRevision("--version");
-      var both = await _gitRevision("HEAD --version");
+      final version = await _gitRevision("--version");
+      final both = await _gitRevision("HEAD --version");
       expect(both, equals(version));
     });
   });
@@ -283,27 +286,27 @@ void main() {
     MemoryLogger logger;
     CliApp app;
     GitVersioner versioner;
-    String log;
+    late String log;
 
     setUp(() async {
       logger = MemoryLogger();
 
       app = CliApp(logger, (config) {
-        versioner = _MockGitVersioner();
-        when(versioner.config).thenReturn(config);
-        when(versioner.revision).thenAnswer((_) => Future.value(432));
-        when(versioner.versionName).thenAnswer((_) => Future.value('432-SNAPSHOT'));
-        when(versioner.headBranchName).thenAnswer((_) => Future.value('myBranch'));
-        when(versioner.sha1).thenAnswer((_) => Future.value('1234567'));
-        when(versioner.allFirstBaseBranchCommits).thenAnswer((_) => Future.value(_commits(152)));
-        when(versioner.baseBranchCommits).thenAnswer((_) => Future.value(_commits(377)));
-        when(versioner.baseBranchTimeComponent).thenAnswer((_) => Future.value(773));
-        when(versioner.featureBranchCommits).thenAnswer((_) => Future.value(_commits(677)));
-        when(versioner.featureBranchTimeComponent).thenAnswer((_) => Future.value(776));
-        when(versioner.featureBranchOrigin).thenAnswer((_) => Future.value(Commit('featureBranchOrigin', null)));
-        when(versioner.commits).thenAnswer((_) => Future.value(_commits(432)));
-        when(versioner.localChanges).thenAnswer((_) => Future.value(LocalChanges(4, 5, 6)));
-        return versioner;
+        return _FakeGitVersioner(
+          config: config,
+          revisionField: 432,
+          versionNameField: '432-SNAPSHOT',
+          headBranchNameField: 'myBranch',
+          sha1Field: '1234567',
+          allFirstBaseBranchCommitsField: _commits(152),
+          commitsField: _commits(432),
+          baseBranchCommitsField: _commits(377),
+          baseBranchTimeComponentField: 773,
+          featureBranchCommitsField: _commits(677),
+          featureBranchTimeComponentField: 776,
+          featureBranchOriginField: Commit('featureBranchOrigin', '0'),
+          localChangesField: const LocalChanges(4, 5, 6),
+        );
       });
       await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf', '--full']);
       log = logger.messages.join('\n');
@@ -361,43 +364,93 @@ void main() {
       // detects new added fields which aren't mocked
       expect(log, isNot(contains('null')));
     });
-
-    test('requires gitVersioner', () async {
-      app = CliApp(MemoryLogger(), (_) => null);
-      try {
-        await app.process([]);
-      } on AssertionError catch (e) {
-        expect(e.toString(), contains('versioner != null'));
-      }
-    });
-  });
-
-  group('initialize cli app', () {
-    test("logger can't be null", () {
-      try {
-        CliApp(null, null);
-      } on AssertionError catch (e) {
-        expect(e.toString(), contains('logger != null'));
-      }
-    });
   });
 }
 
 Future<MemoryLogger> _gitRevision(String args) async {
-  var logger = MemoryLogger();
+  final logger = MemoryLogger();
   // creates CliApp without revision part
-  var app = CliApp(logger, (_) => null);
+  final app = CliApp(logger, (_) => null);
 
   await app.process(args.split(' '));
 
   return logger;
 }
 
-class _MockGitVersioner extends Mock implements GitVersioner {}
+class _FakeGitVersioner implements GitVersioner {
+  _FakeGitVersioner({
+    this.allFirstBaseBranchCommitsField,
+    this.baseBranchCommitsField,
+    this.baseBranchTimeComponentField,
+    this.commitsField,
+    required this.config,
+    this.featureBranchCommitsField,
+    this.featureBranchOriginField,
+    this.featureBranchTimeComponentField,
+    this.headBranchNameField,
+    this.localChangesField,
+    this.revisionField,
+    this.sha1Field,
+    this.versionNameField,
+  });
+
+  final List<Commit>? allFirstBaseBranchCommitsField;
+  @override
+  Future<List<Commit>> get allFirstBaseBranchCommits async => allFirstBaseBranchCommitsField!;
+
+  final List<Commit>? baseBranchCommitsField;
+  @override
+  Future<List<Commit>> get baseBranchCommits async => baseBranchCommitsField!;
+
+  final int? baseBranchTimeComponentField;
+  @override
+  Future<int> get baseBranchTimeComponent async => baseBranchTimeComponentField!;
+  final List<Commit>? commitsField;
+  @override
+  Future<List<Commit>> get commits async => commitsField!;
+
+  @override
+  final GitVersionerConfig config;
+
+  List<Commit>? featureBranchCommitsField;
+  @override
+  Future<List<Commit>> get featureBranchCommits async => featureBranchCommitsField!;
+
+  Commit? featureBranchOriginField;
+  @override
+  Future<Commit?> get featureBranchOrigin async => featureBranchOriginField;
+
+  int? featureBranchTimeComponentField;
+  @override
+  Future<int> get featureBranchTimeComponent async => featureBranchTimeComponentField!;
+
+  @override
+  GitClient get gitClient => throw UnimplementedError();
+
+  String? headBranchNameField;
+  @override
+  Future<String?> get headBranchName async => headBranchNameField!;
+
+  LocalChanges? localChangesField;
+  @override
+  Future<LocalChanges?> get localChanges async => localChangesField!;
+
+  int? revisionField;
+  @override
+  Future<int> get revision async => revisionField!;
+
+  String? sha1Field;
+  @override
+  Future<String?> get sha1 async => sha1Field;
+
+  String? versionNameField;
+  @override
+  Future<String> get versionName async => versionNameField!;
+}
 
 List<Commit> _commits(int count) {
-  var now = DateTime.now();
-  return List(count).map((_) {
+  final now = DateTime.now();
+  return List.generate(count, (_) {
     return Commit("some sha1", now.toIso8601String());
   }).toList(growable: false);
 }

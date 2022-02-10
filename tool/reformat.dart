@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
-Future<Null> main(List<String> args) => reformat();
+Future<void> main(List<String> args) => reformat();
 
-Future<Null> reformat() async {
-  Process p =
+Future<void> reformat() async {
+  final Process p =
       await Process.start('dartfmt', ['--set-exit-if-changed', '--fix', '-l 120', '-w', 'bin', 'lib', 'test', 'tool'])
           .then((process) {
     stdout.writeln('Reformatting project with dartfmt');
 
-    var out = process.stdout
+    final out = process.stdout
         .map((it) => String.fromCharCodes(it))
         .where((it) => !it.contains("Unchanged"))
         .map((it) => it.replaceFirst('Formatting directory ', ''))
@@ -21,7 +21,7 @@ Future<Null> reformat() async {
     return process;
   });
 
-  var code = await p.exitCode;
+  final code = await p.exitCode;
   if (code != 0) {
     exit(code);
   }

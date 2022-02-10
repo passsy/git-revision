@@ -8,7 +8,7 @@ void clean() {
 }
 
 void cleanupDir(String path) {
-  var directory = Directory(path);
+  final directory = Directory(path);
   if (directory.existsSync()) {
     directory.deleteSync(recursive: true);
   }

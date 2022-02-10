@@ -6,23 +6,18 @@ import 'package:git_revision/git_revision.dart';
 
 part 'cli_app.g.dart';
 
-typedef GitVersioner GitVersionerProvider(GitVersionerConfig config);
-
 class CliApp {
   final CliLogger logger;
 
   // manual injection of the [GitVersioner]
-  final GitVersionerProvider versionerProvider;
+  final GitVersioner? Function(GitVersionerConfig config) versionerProvider;
 
-  CliApp(this.logger, this.versionerProvider)
-      : assert(logger != null),
-        assert(versionerProvider != null);
+  CliApp(this.logger, this.versionerProvider);
 
   CliApp.production([CliLogger logger = const CliLogger()]) : this(logger, (config) => GitVersioner(config));
 
-  Future<Null> process(List<String> args) async {
+  Future<void> process(List<String> args) async {
     final cliArgs = parseCliArgs(args);
-    assert(cliArgs != null);
 
     if (cliArgs.showHelp) {
       showUsage();
@@ -34,11 +29,12 @@ class CliApp {
       return;
     }
 
-    var versioner = versionerProvider(cliArgs.toConfig());
-    assert(versioner != null);
+    final versioner = versionerProvider(cliArgs.toConfig())!;
 
     if (cliArgs.fullOutput) {
-      logger.stdOut(trimLines('''
+      logger.stdOut(
+        trimLines(
+          '''
         versionCode: ${await versioner.revision}
         versionName: ${await versioner.versionName}
         baseBranch: ${versioner.config.baseBranch}
@@ -49,14 +45,16 @@ class CliApp {
         baseBranchCommitCount: ${(await versioner.baseBranchCommits).length}
         baseBranchTimeComponent: ${await versioner.baseBranchTimeComponent}
         featureBranchCommitCount: ${(await versioner.featureBranchCommits).length}
-        featureBranchTimeComponent: ${(await versioner.featureBranchTimeComponent)}
+        featureBranchTimeComponent: ${await versioner.featureBranchTimeComponent}
         featureOrigin: ${(await versioner.featureBranchOrigin)?.sha1}
         yearFactor: ${versioner.config.yearFactor}
         localChanges: ${await versioner.localChanges}
-        '''));
+        ''',
+        ),
+      );
     } else {
       // default output
-      var revision = await versioner.versionName;
+      final revision = await versioner.versionName;
       logger.stdOut(revision);
     }
   }
@@ -64,46 +62,60 @@ class CliApp {
   static final _cliArgParser = ArgParser()
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.')
     ..addFlag('version', abbr: 'v', help: 'Shows the version information of git revision', negatable: false)
-    ..addOption('context',
-        abbr: 'C', help: '<path> Run as if git was started in <path> instead of the current working directory')
-    ..addOption('baseBranch',
-        abbr: 'b',
-        help:
-            'The base branch where most of the development happens. Often what is set as baseBranch in github. Only on the baseBranch the revision can become only digits.',
-        defaultsTo: GitVersioner.DEFAULT_BRANCH.toString())
-    ..addOption('yearFactor',
-        abbr: 'y', help: 'revision increment count per year', defaultsTo: GitVersioner.DEFAULT_YEAR_FACTOR.toString())
+    ..addOption(
+      'context',
+      abbr: 'C',
+      help: '<path> Run as if git was started in <path> instead of the current working directory',
+    )
+    ..addOption(
+      'baseBranch',
+      abbr: 'b',
+      help:
+          'The base branch where most of the development happens. Often what is set as baseBranch in github. Only on the baseBranch the revision can become only digits.',
+      defaultsTo: GitVersioner.defaultBranch,
+    )
+    ..addOption(
+      'yearFactor',
+      abbr: 'y',
+      help: 'revision increment count per year',
+      defaultsTo: GitVersioner.defaultYearFactor.toString(),
+    )
     ..addOption(
       'stopDebounce',
       abbr: 'd',
-      defaultsTo: GitVersioner.DEFAULT_STOP_DEBOUNCE.toString(),
+      defaultsTo: GitVersioner.defaultStopDebounce.toString(),
       help: 'time between two commits '
           'which are further apart than this stopDebounce (in hours) will not be included into the timeComponent. '
           'A project on hold for a few months will therefore not increase the revision drastically when development '
           'starts again.',
     )
-    ..addOption('name',
-        abbr: 'n',
-        help: "a human readable name and identifier of a revision ('73_<name>+21_996321c'). "
-            "Can be anything which gives the revision more meaning i.e. the number of the PullRequest when building on CI. "
-            "Allowed characters: [a-zA-Z0-9_\-\/] any letter, digits, underscore, dash and slash. Invalid characters will be removed.")
-    ..addFlag('full',
-        help: 'shows full information about the current revision and extracted information', negatable: false);
+    ..addOption(
+      'name',
+      abbr: 'n',
+      help: "a human readable name and identifier of a revision ('73_<name>+21_996321c'). "
+          "Can be anything which gives the revision more meaning i.e. the number of the PullRequest when building on CI. "
+          "Allowed characters: [a-zA-Z0-9_-/] any letter, digits, underscore, dash and slash. Invalid characters will be removed.",
+    )
+    ..addFlag(
+      'full',
+      help: 'shows full information about the current revision and extracted information',
+      negatable: false,
+    );
 
   static GitRevisionCliArgs parseCliArgs(List<String> args) {
-    ArgResults argResults = _cliArgParser.parse(args);
+    final ArgResults argResults = _cliArgParser.parse(args);
 
-    var parsedCliArgs = GitRevisionCliArgs();
+    final parsedCliArgs = GitRevisionCliArgs();
 
-    parsedCliArgs.showHelp = argResults['help'];
-    parsedCliArgs.showVersion = argResults['version'];
-    parsedCliArgs.fullOutput = argResults['full'];
-    parsedCliArgs.repoPath = argResults['context'];
-    parsedCliArgs.baseBranch = argResults['baseBranch'];
+    parsedCliArgs.showHelp = argResults['help'] as bool;
+    parsedCliArgs.showVersion = argResults['version'] as bool;
+    parsedCliArgs.fullOutput = argResults['full'] as bool;
+    parsedCliArgs.repoPath = argResults['context'] as String?;
+    parsedCliArgs.baseBranch = argResults['baseBranch'] as String;
     parsedCliArgs.yearFactor = intArg(argResults, 'yearFactor');
     parsedCliArgs.stopDebounce = intArg(argResults, 'stopDebounce');
     if (argResults.rest.length == 1) {
-      var rest = argResults.rest[0];
+      final rest = argResults.rest[0];
       if (rest.isNotEmpty) {
         parsedCliArgs.revision = rest;
       }
@@ -111,9 +123,8 @@ class CliApp {
       throw ArgError('expected only one revision argument, found ${argResults.rest.length}: ${argResults.rest}');
     }
 
-    final String rawName = argResults['name'];
+    final String? rawName = argResults['name'] as String?;
     if (rawName != null) {
-      // replace illegal chars with underscore
       String safeName = rawName.replaceAll(RegExp(r'[^\w_\-\/]+'), '_').replaceAll('__', '_');
 
       // trim underscore at start and end
@@ -133,9 +144,9 @@ class CliApp {
   }
 
   static int intArg(ArgResults args, String name) {
-    var raw = (args[name] as String)?.trim();
+    final raw = (args[name] as String?)?.trim();
     try {
-      return int.parse(raw);
+      return int.parse(raw!);
     } on FormatException {
       throw ArgError("$name is not a integer '$raw'");
     }
@@ -157,12 +168,12 @@ class GitRevisionCliArgs {
   bool showHelp = false;
   bool showVersion = false;
 
-  String repoPath;
+  String? repoPath;
   String revision = 'HEAD';
-  String name;
-  String baseBranch = GitVersioner.DEFAULT_BRANCH;
-  int yearFactor = GitVersioner.DEFAULT_YEAR_FACTOR;
-  int stopDebounce = GitVersioner.DEFAULT_STOP_DEBOUNCE;
+  String? name;
+  String baseBranch = GitVersioner.defaultBranch;
+  int yearFactor = GitVersioner.defaultYearFactor;
+  int stopDebounce = GitVersioner.defaultStopDebounce;
 
   bool fullOutput = false;
 

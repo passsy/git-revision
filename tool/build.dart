@@ -1,21 +1,21 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:yaml/yaml.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:path/path.dart' as path;
+import 'package:yaml/yaml.dart';
 
 import 'util/process.dart';
 
-Future<Null> main(List<String> args) => build();
+Future<void> main(List<String> args) => build();
 
-Future<Null> build() async {
+Future<void> build() async {
   await buildGeneratedSource();
 
   print("Building snapshot");
   // Ensure that the `build/` directory exists.
   await Directory('build').create(recursive: true);
-  var outFile = File("build/git_revision.dart.snapshot");
+  final outFile = File("build/git_revision.dart.snapshot");
   await sh("dart --snapshot=${outFile.path} bin/git_revision.dart");
   assert(outFile.existsSync());
   await sh("chmod 755 ${outFile.path}", quiet: true);
@@ -23,7 +23,7 @@ Future<Null> build() async {
   print("snapshot at ${outFile.absolute.path}");
 }
 
-Future<Null> buildGeneratedSource() async {
+Future<void> buildGeneratedSource() async {
   print("Building generated source");
   final content = await File('pubspec.yaml').readAsString();
   final yaml = loadYaml(content) as Map;
@@ -43,7 +43,7 @@ Future<Null> buildGeneratedSource() async {
       // **************************************************************************
 
       const String versionName = '$version';
-      ''');
+      ''',);
 
   await partFile.writeAsString(source);
 

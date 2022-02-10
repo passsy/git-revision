@@ -3,7 +3,7 @@ class Commit {
 
   String sha1;
   String rawDate;
-  DateTime parsedDate;
+  DateTime? parsedDate;
 
   DateTime get date {
     return parsedDate ??= DateTime.fromMillisecondsSinceEpoch(int.parse(rawDate) * 1000);

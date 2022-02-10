@@ -5,53 +5,53 @@ import 'package:git_revision/git/commit.dart';
 import 'package:git_revision/git/git_client.dart';
 import 'package:git_revision/git/local_changes.dart';
 
-Duration _YEAR = Duration(days: 365);
+Duration _year = const Duration(days: 365);
 
 class GitVersioner {
-  static String DEFAULT_BRANCH = 'master';
-  static int DEFAULT_YEAR_FACTOR = 1000;
-  static int DEFAULT_STOP_DEBOUNCE = 48;
+  static String defaultBranch = 'master';
+  static int defaultYearFactor = 1000;
+  static int defaultStopDebounce = 48;
 
   final GitVersionerConfig config;
   final GitClient gitClient;
 
   /// always returns a version which automatically caches
   factory GitVersioner(GitVersionerConfig config) {
-    var versioner = GitVersioner._(config, GitClient(config.repoPath));
+    final versioner = GitVersioner._(config, GitClient(config.repoPath!));
     return _CachedGitVersioner(versioner);
   }
 
   GitVersioner._(this.config, this.gitClient);
 
   Future<int> get revision async {
-    var commits = await baseBranchCommits;
-    var timeComponent = await baseBranchTimeComponent;
+    final commits = await baseBranchCommits;
+    final timeComponent = await baseBranchTimeComponent;
     return commits.length + timeComponent;
   }
 
   // TODO swap name with revision
   Future<String> get versionName async {
-    var rev = await revision;
-    var hash = (await gitClient.sha1(config.rev))?.substring(0, 7) ?? "0000000";
-    var additionalCommits = await featureBranchCommits;
+    final rev = await revision;
+    final hash = (await gitClient.sha1(config.rev))?.substring(0, 7) ?? "0000000";
+    final additionalCommits = await featureBranchCommits;
 
     if (config.rev == 'HEAD') {
-      var branch = await gitClient.headBranchName;
-      var changes = await gitClient.localChanges(config.rev);
+      final branch = await gitClient.headBranchName;
+      final changes = await gitClient.localChanges(config.rev);
 
       String name = '';
       if (branch != null && branch != config.baseBranch) {
-        name = branch != null ? "_$branch" : '';
+        name = "_$branch";
       }
       if (config.name != null && config.name != config.baseBranch) {
         name = "_${config.name}";
       }
-      var furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
-      var dirtyPart = (changes == LocalChanges.NONE) ? '' : '-dirty';
+      final furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
+      final dirtyPart = (changes == LocalChanges.none) ? '' : '-dirty';
 
       return "$rev$name${furtherPart}_$hash$dirtyPart";
     } else {
-      var furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
+      final furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
       String name = '';
 
       if (!hash.startsWith(config.rev) && config.rev != config.baseBranch) {
@@ -70,8 +70,8 @@ class GitVersioner {
   /// Most often a subset of [firstHeadBranchCommits]
   Future<List<Commit>> get allFirstBaseBranchCommits async {
     try {
-      var base = await gitClient.branchLocalOrRemote(config.baseBranch).first;
-      var commits = await gitClient.revList('$base', firstParentOnly: true);
+      final base = await gitClient.branchLocalOrRemote(config.baseBranch).first;
+      final commits = await gitClient.revList(base, firstParentOnly: true);
       return commits;
     } catch (ex) {
       return [];
@@ -79,21 +79,21 @@ class GitVersioner {
   }
 
   /// branch name of `HEAD` or `null`
-  Future<String> get headBranchName => gitClient.headBranchName;
+  Future<String?> get headBranchName => gitClient.headBranchName;
 
   /// full Sha1 or `null`
-  Future<String> get sha1 => gitClient.sha1(config.rev);
+  Future<String?> get sha1 => gitClient.sha1(config.rev);
 
-  Future<LocalChanges> get localChanges => gitClient.localChanges(config.rev);
+  Future<LocalChanges?> get localChanges => gitClient.localChanges(config.rev);
 
   /// All commits in history of [GitVersionerConfig.rev]
   Future<List<Commit>> get commits => gitClient.revList(config.rev);
 
   /// Commit where the featureBranch branched off the baseBranch or the first commit in history in case of an
   /// unrelated history
-  Future<Commit> get featureBranchOrigin async {
-    var firstBaseCommits = await allFirstBaseBranchCommits;
-    var allheadCommits = await commits;
+  Future<Commit?> get featureBranchOrigin async {
+    final firstBaseCommits = await allFirstBaseBranchCommits;
+    final allheadCommits = await commits;
 
     try {
       return allheadCommits.firstWhere((c) => firstBaseCommits.contains(c));
@@ -116,12 +116,12 @@ class GitVersioner {
   /// This are the commits which are added to this branch which are not yet merged into baseBranch at this point.
   /// They may be merged already in the future history which will be ignored here
   Future<List<Commit>> get featureBranchCommits async {
-    var origin = await featureBranchOrigin;
+    final origin = await featureBranchOrigin;
     if (origin != null) {
       return gitClient.revList('${config.rev}...${origin.sha1}');
     } else {
       // in case of unrelated histories use all commit in history
-      return await commits;
+      return commits;
     }
   }
 
@@ -130,49 +130,47 @@ class GitVersioner {
   Future<int> get featureBranchTimeComponent => featureBranchCommits.then(_timeComponent);
 
   int _timeComponent(List<Commit> commits) {
-    assert(commits != null);
     if (commits.isEmpty) return 0;
 
-    var completeTime = commits.last.date.difference(commits.first.date).abs();
+    final completeTime = commits.last.date.difference(commits.first.date).abs();
     if (completeTime == Duration.zero) return 0;
 
     // find gaps
     var gaps = Duration.zero;
     for (var i = 1; i < commits.length; i++) {
-      var prev = commits[i];
+      final prev = commits[i];
       // rev-list comes in reversed order
-      var next = commits[i - 1];
-      var diff = next.date.difference(prev.date).abs();
+      final next = commits[i - 1];
+      final diff = next.date.difference(prev.date).abs();
       if (diff.inHours >= config.stopDebounce) {
         gaps += diff;
       }
     }
 
     // remove huge gaps where no work happened
-    var workingTime = completeTime - gaps;
-    var timeComponent = _yearFactor(workingTime);
+    final workingTime = completeTime - gaps;
+    final timeComponent = _yearFactor(workingTime);
 
     return timeComponent;
   }
 
-  int _yearFactor(Duration duration) => (duration.inSeconds * config.yearFactor / _YEAR.inSeconds + 0.5).toInt();
+  int _yearFactor(Duration duration) => (duration.inSeconds * config.yearFactor / _year.inSeconds + 0.5).toInt();
 }
 
 class GitVersionerConfig {
   String baseBranch;
-  String repoPath;
+  String? repoPath;
   int yearFactor;
   int stopDebounce;
-  String name;
+  String? name;
 
   /// The revision for which the version should be calculated
   String rev;
 
   GitVersionerConfig(this.baseBranch, this.repoPath, this.yearFactor, this.stopDebounce, this.name, this.rev)
-      : assert(baseBranch != null),
-        assert(yearFactor >= 0),
+      : assert(yearFactor >= 0),
         assert(stopDebounce >= 0),
-        assert(rev != null && rev.isNotEmpty);
+        assert(rev.isNotEmpty);
 
   @override
   bool operator ==(Object other) =>
@@ -198,7 +196,7 @@ class GitVersionerConfig {
 
 /// Caching layer for [GitVersioner]. Caches all futures which never produce a different result (if git repo doesn't change)
 class _CachedGitVersioner extends GitVersioner with FutureCacheMixin {
-  GitVersioner _delegate;
+  final GitVersioner _delegate;
 
   _CachedGitVersioner(GitVersioner delegate)
       : _delegate = delegate,
@@ -226,20 +224,20 @@ class _CachedGitVersioner extends GitVersioner with FutureCacheMixin {
       cache<List<Commit>>(() => _delegate.baseBranchCommits, 'baseBranchCommits');
 
   @override
-  Future<String> get sha1 => cache(() => _delegate.sha1, 'sha1');
+  Future<String?> get sha1 => cache(() => _delegate.sha1, 'sha1');
 
   @override
-  Future<String> get headBranchName => cache(() => _delegate.headBranchName, 'headBranchName');
+  Future<String?> get headBranchName => cache(() => _delegate.headBranchName, 'headBranchName');
 
   @override
   Future<String> get versionName => cache(() => _delegate.versionName, 'versionName');
 
   @override
-  Future<LocalChanges> get localChanges => cache(() => _delegate.localChanges, 'localChanges');
+  Future<LocalChanges?> get localChanges => cache(() => _delegate.localChanges, 'localChanges');
 
   @override
   Future<List<Commit>> get commits => cache(() => _delegate.commits, 'commits');
 
   @override
-  Future<Commit> get featureBranchOrigin => cache(() => _delegate.featureBranchOrigin, 'featureBranchOrigin');
+  Future<Commit?> get featureBranchOrigin => cache(() => _delegate.featureBranchOrigin, 'featureBranchOrigin');
 }

@@ -3,7 +3,7 @@ class LocalChanges {
   final int additions;
   final int deletions;
 
-  static LocalChanges NONE = LocalChanges(0, 0, 0);
+  static LocalChanges none = const LocalChanges(0, 0, 0);
 
   const LocalChanges(this.filesChanged, this.additions, this.deletions)
       : assert(filesChanged >= 0),

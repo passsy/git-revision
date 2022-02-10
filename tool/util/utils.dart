@@ -8,6 +8,6 @@ Future<String> projectVersion() async {
   final content = await File('pubspec.yaml').readAsString();
   final yaml = loadYaml(content) as Map;
   final version = yaml['version'] as String;
-  assert(version != null && version.isNotEmpty);
+  assert(version.isNotEmpty);
   return version;
 }

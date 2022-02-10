@@ -3,8 +3,8 @@ import 'dart:io' as io;
 
 import 'package:git_revision/cli_app.dart';
 
-Future<Null> main(List<String> args) async {
-  var app = CliApp.production();
+Future<void> main(List<String> args) async {
+  final app = CliApp.production();
 
   try {
     await app.process(args);

@@ -14,21 +14,21 @@ import 'util/archive.dart';
 import 'util/utils.dart';
 
 /// Generates the standalone packages
-Future<Null> main(List<String> args) => standalone();
+Future<void> main(List<String> args) => standalone();
 
 /// Big thanks to @nex3 and the https://github.com/sass/dart-sass project where the this process first appeared
-Future<Null> standalone() async {
+Future<void> standalone() async {
   await build();
 
   final platforms = ["linux", "macos", "windows"];
   final architectures = ["ia32", "x64"];
   final Version dartVersion = Version.parse(Platform.version.split(" ").first);
-  String channel = dartVersion.isPreRelease ? "dev" : "stable";
+  final String channel = dartVersion.isPreRelease ? "dev" : "stable";
   await Future.wait(platforms.expand((os) {
     return architectures.map((arch) {
       return StandaloneBundler(os, arch, dartVersion.toString(), channel).bundle();
     });
-  }));
+  }),);
 }
 
 class StandaloneBundler {
@@ -72,8 +72,8 @@ class StandaloneBundler {
     }
 
     // and the dart license
-    archive.addFile(fileFromBytes(
-        "git-revision/src/DART_LICENSE", dartSdk.firstWhere((file) => file.name.endsWith("/LICENSE")).content));
+    archive.addFile(fileFromBytes("git-revision/src/DART_LICENSE",
+        dartSdk.firstWhere((file) => file.name.endsWith("/LICENSE")).content as List<int>,),);
 
     // add snapshot
     // TODO: Use an app snapshots when https://github.com/dart-lang/sdk/issues/28617 is fixed.
@@ -94,11 +94,11 @@ class StandaloneBundler {
     if (os == 'windows') {
       final output = "$prefix.zip";
       print("Saving $output...");
-      await File(output).writeAsBytes(ZipEncoder().encode(archive));
+      await File(output).writeAsBytes(ZipEncoder().encode(archive)!);
     } else {
       final output = "$prefix.tar.gz";
       print("Saving $output...");
-      await File(output).writeAsBytes(GZipEncoder().encode(TarEncoder().encode(archive)));
+      await File(output).writeAsBytes(GZipEncoder().encode(TarEncoder().encode(archive))!);
     }
   }
 }

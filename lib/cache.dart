@@ -1,6 +1,6 @@
 import 'dart:async';
 
-const bool ANALYZE = false;
+const bool analyze = false;
 
 // Mixin allowing to cache Futures
 class FutureCacheMixin {
@@ -8,8 +8,8 @@ class FutureCacheMixin {
 
   /// Caches futures
   /// [key] cacheKey
-  Future<T> cache<T>(Future<T> futureProvider(), String key) async {
-    var cached = _futureCache[key];
+  Future<T> cache<T>(Future<T> Function() futureProvider, String key) async {
+    final cached = _futureCache[key] as Future<T>?;
     Future<T> future;
     if (cached != null) {
       future = cached;
@@ -18,12 +18,12 @@ class FutureCacheMixin {
       _futureCache[key] = future;
     }
 
-    if (ANALYZE) {
+    if (analyze) {
       if (cached == null) {
         print("       > $key");
-        var start = DateTime.now();
-        var result = await future;
-        var diff = DateTime.now().difference(start);
+        final start = DateTime.now();
+        final result = await future;
+        final diff = DateTime.now().difference(start);
         print("${diff.inMilliseconds.toString().padLeft(4)}ms < $key");
         return result;
       } else {
