@@ -15,7 +15,7 @@ class GitClient {
 
   Future<List<Commit>> revList(String revision, {bool firstParentOnly = false}) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
-    final String? result = await git(
+    final String? result = await _git(
       'rev-list --pretty=%ct%n${firstParentOnly ? ' --first-parent' : ''} $revision',
       emptyResultIsError: false,
     );
@@ -29,7 +29,7 @@ class GitClient {
 
   /// full Sha1 or `null`
   Future<String?> sha1(String revision) async {
-    final hash = await git('rev-parse $revision', emptyResultIsError: false);
+    final hash = await _git('rev-parse $revision', emptyResultIsError: false);
     if (hash == null) {
       return null;
     }
@@ -46,7 +46,7 @@ class GitClient {
 
   /// branch name of `HEAD` or `null`
   Future<String?> get headBranchName async {
-    final name = await git('symbolic-ref --short -q HEAD', emptyResultIsError: false);
+    final name = await _git('symbolic-ref --short -q HEAD', emptyResultIsError: false);
     if (name == null) return null;
 
     // empty branch names can't exits this means no branch name
@@ -68,7 +68,7 @@ class GitClient {
       return LocalChanges.none;
     }
 
-    final changes = await git('diff --shortstat HEAD', emptyResultIsError: false);
+    final changes = await _git('diff --shortstat HEAD', emptyResultIsError: false);
     if (changes == null) return null;
     return _parseDiffShortStat(changes);
   }
@@ -77,7 +77,7 @@ class GitClient {
   ///
   /// `git branch --all --list "*$rev"`
   Stream<String> branchLocalOrRemote(String branchName) async* {
-    final String? text = await git("branch --all --list *$branchName");
+    final String? text = await _git("branch --all --list *$branchName", emptyResultIsError: false);
     if (text == null) {
       return;
     }
@@ -92,7 +92,7 @@ class GitClient {
     }
   }
 
-  Future<String?> git(String args, {bool emptyResultIsError = true}) async {
+  Future<String?> _git(String args, {bool emptyResultIsError = true}) async {
     final argList = args.split(' ');
 
     final processResult = await Process.run('git', argList, workingDirectory: workingDir);
@@ -166,8 +166,8 @@ class _GitClientCache extends GitClient with FutureCacheMixin {
   }
 
   @override
-  Future<String?> git(String args, {bool emptyResultIsError = true}) {
+  Future<String?> _git(String args, {bool emptyResultIsError = true}) {
     final name = 'git $args -- $emptyResultIsError';
-    return cache(() => super.git(args, emptyResultIsError: emptyResultIsError), name);
+    return cache(() => super._git(args, emptyResultIsError: emptyResultIsError), name);
   }
 }
