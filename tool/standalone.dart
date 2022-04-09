@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:http/http.dart' as http;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:synchronized/synchronized.dart';
 
 import 'build.dart';
 import 'util/archive.dart';
@@ -21,14 +22,16 @@ Future<void> standalone() async {
   await build();
 
   final platforms = ["linux", "macos", "windows"];
-  final architectures = ["ia32", "x64"];
+  final architectures = ["ia32", "x64", "arm64", 'arm'];
   final Version dartVersion = Version.parse(Platform.version.split(" ").first);
   final String channel = dartVersion.isPreRelease ? "dev" : "stable";
-  await Future.wait(platforms.expand((os) {
-    return architectures.map((arch) {
-      return StandaloneBundler(os, arch, dartVersion.toString(), channel).bundle();
-    });
-  }),);
+  await Future.wait(
+    platforms.expand((os) {
+      return architectures.map((arch) {
+        return StandaloneBundler(os, arch, dartVersion.toString(), channel).bundle();
+      });
+    }),
+  );
 }
 
 class StandaloneBundler {
@@ -41,19 +44,34 @@ class StandaloneBundler {
 
   Future bundle() async {
     final sdk = await _downloadDartSdk();
+    if (sdk == null) {
+      print("There is no dart sdk available for variant Dart $dartVersion on $os-$architecture, skipping");
+      return;
+    }
+    print("bundling $os-$architecture");
     final archive = await _bundleArchive(sdk);
-    await _writeToDisk(archive);
+    final file = await _writeToDisk(archive);
+    print("created archive $os-$architecture $file");
   }
 
-  Future<Archive> _downloadDartSdk() async {
+  /// Do download sequential
+  final _downloadLock = Lock();
+
+  Future<Archive?> _downloadDartSdk() async {
     // TODO: Compile a single executable that embeds the Dart VM and the snapshot
     // when dart-lang/sdk#27596 is fixed.
     final url = "https://storage.googleapis.com/dart-archive/channels/$channel/"
         "release/$dartVersion/sdk/dartsdk-$os-$architecture-release.zip";
-    print("Downloading $url...");
-    final response = await http.get(Uri.parse(url));
+    final response = await _downloadLock.synchronized(() {
+      print("Downloading $url");
+      return http.get(Uri.parse(url));
+    });
+    if (response.statusCode == 404) {
+      return null;
+    }
+    print("Downloaded $url");
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw "Failed to download package: ${response.statusCode} ${response.reasonPhrase}.";
+      throw "Failed to download package: ${response.statusCode} ${response.reasonPhrase} $url.";
     }
     final dartSdk = ZipDecoder().decodeBytes(response.bodyBytes);
     return dartSdk;
@@ -72,8 +90,12 @@ class StandaloneBundler {
     }
 
     // and the dart license
-    archive.addFile(fileFromBytes("git-revision/src/DART_LICENSE",
-        dartSdk.firstWhere((file) => file.name.endsWith("/LICENSE")).content as List<int>,),);
+    archive.addFile(
+      fileFromBytes(
+        "git-revision/src/DART_LICENSE",
+        dartSdk.firstWhere((file) => file.name.endsWith("/LICENSE")).content as List<int>,
+      ),
+    );
 
     // add snapshot
     // TODO: Use an app snapshots when https://github.com/dart-lang/sdk/issues/28617 is fixed.
@@ -82,23 +104,33 @@ class StandaloneBundler {
     archive.addFile(file("git-revision/src/LICENSE", "LICENSE"));
 
     // add executable
-    archive.addFile(file("git-revision/git-revision", "package/git-revision.sh", executable: true));
-    archive.addFile(file("git-revision/git-revision.bat", "package/git-revision.bat", executable: true));
+    if (os == 'windows') {
+      archive.addFile(file("git-revision/git-revision.bat", "package/git-revision.bat", executable: true));
+    } else {
+      archive.addFile(file("git-revision/git-revision", "package/git-revision.sh", executable: true));
+    }
 
     return archive;
   }
 
-  Future<void> _writeToDisk(final Archive archive) async {
+  Future<File> _writeToDisk(final Archive archive) async {
     final version = await projectVersion();
     final prefix = 'build/git_revision-$version-$os-$architecture';
+    late String output;
+    late List<int>? Function(Archive archive) encode;
     if (os == 'windows') {
-      final output = "$prefix.zip";
-      print("Saving $output...");
-      await File(output).writeAsBytes(ZipEncoder().encode(archive)!);
+      output = "$prefix.zip";
+      encode = (archive) => ZipEncoder().encode(archive);
     } else {
-      final output = "$prefix.tar.gz";
-      print("Saving $output...");
-      await File(output).writeAsBytes(GZipEncoder().encode(TarEncoder().encode(archive))!);
+      output = "$prefix.tar.gz";
+      encode = (archive) => GZipEncoder().encode(TarEncoder().encode(archive));
     }
+    print("Saving $output...");
+    final file = File(output);
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+    await file.writeAsBytes(encode(archive)!);
+    return file;
   }
 }
