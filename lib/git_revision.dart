@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:git_revision/cache.dart';
 import 'package:git_revision/git/commit.dart';
@@ -17,7 +18,7 @@ class GitVersioner {
 
   /// always returns a version which automatically caches
   factory GitVersioner(GitVersionerConfig config) {
-    final versioner = GitVersioner._(config, GitClient(config.repoPath!));
+    final versioner = GitVersioner._(config, GitClient(config.repoPath ?? Directory.current.path));
     return _CachedGitVersioner(versioner);
   }
 
