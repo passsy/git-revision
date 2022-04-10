@@ -6,4 +6,4 @@ part of 'cli_app.dart';
 // BuildConfig
 // **************************************************************************
 
-const String versionName = '0.6.0';
+const String versionName = '0.7.1';

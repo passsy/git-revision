@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- Fix build number
+
 ## 0.7.0
 
 - Support for arm & arm64 architectures
