@@ -9,7 +9,6 @@ import 'package:git_revision/git/local_changes.dart';
 Duration _year = const Duration(days: 365);
 
 class GitVersioner {
-  static String defaultBranch = 'master';
   static int defaultYearFactor = 1000;
   static int defaultStopDebounce = 48;
 
@@ -36,15 +35,16 @@ class GitVersioner {
     final hash = (await gitClient.sha1(config.rev))?.substring(0, 7) ?? "0000000";
     final additionalCommits = await featureBranchCommits;
 
+    final _baseBranch = await baseBranch;
     if (config.rev == 'HEAD') {
       final branch = await gitClient.headBranchName;
       final changes = await gitClient.localChanges(config.rev);
 
       String name = '';
-      if (branch != null && branch != config.baseBranch) {
+      if (branch != null && branch != _baseBranch) {
         name = "_$branch";
       }
-      if (config.name != null && config.name != config.baseBranch) {
+      if (config.name != null && config.name != _baseBranch) {
         name = "_${config.name}";
       }
       final furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
@@ -55,10 +55,10 @@ class GitVersioner {
       final furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
       String name = '';
 
-      if (!hash.startsWith(config.rev) && config.rev != config.baseBranch) {
+      if (!hash.startsWith(config.rev) && config.rev != _baseBranch) {
         name = "_${config.rev}";
       }
-      if (config.name != null && config.name != config.baseBranch) {
+      if (config.name != null && config.name != _baseBranch) {
         name = "_${config.name}";
       }
 
@@ -66,12 +66,32 @@ class GitVersioner {
     }
   }
 
+  String? _baseBranch;
+  Future<String> get baseBranch async {
+    if (_baseBranch != null) {
+      return _baseBranch!;
+    }
+    return _baseBranch = config.baseBranch ??
+        await () async {
+          if (await gitClient.branchLocalOrRemote('master').firstOrNull().catchError((_) => null) != null) {
+            return 'master';
+          }
+          if (await gitClient.branchLocalOrRemote('main').firstOrNull().catchError((_) => null) != null) {
+            return 'main';
+          }
+
+          // default to main even it it doesn't exist
+          return 'master';
+        }();
+  }
+
   /// All first-parent commits in baseBranch
   ///
   /// Most often a subset of [firstHeadBranchCommits]
   Future<List<Commit>> get allFirstBaseBranchCommits async {
     try {
-      final base = await gitClient.branchLocalOrRemote(config.baseBranch).first;
+      final _baseBranch = await baseBranch;
+      final base = await gitClient.branchLocalOrRemote(_baseBranch).first;
       final commits = await gitClient.revList(base, firstParentOnly: true);
       return commits;
     } catch (ex) {
@@ -159,7 +179,7 @@ class GitVersioner {
 }
 
 class GitVersionerConfig {
-  String baseBranch;
+  String? baseBranch;
   String? repoPath;
   int yearFactor;
   int stopDebounce;
@@ -241,4 +261,14 @@ class _CachedGitVersioner extends GitVersioner with FutureCacheMixin {
 
   @override
   Future<Commit?> get featureBranchOrigin => cache(() => _delegate.featureBranchOrigin, 'featureBranchOrigin');
+}
+
+extension _StreamFirstOrNull<T> on Stream<T> {
+  Future<T?> firstOrNull() async {
+    try {
+      return first;
+    } catch (_) {
+      return null;
+    }
+  }
 }

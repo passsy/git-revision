@@ -1,5 +1,12 @@
 # Changelog
 
-## 0.4.0
+## 0.7.0
 
-- extract core in dart project
+- Support for arm & arm64 architectures
+
+## 0.6.0
+
+- Finally git-revision is available as standalone binary #8
+- License was added (Apache v2) #7
+- Support for git `<2.2.0` #10
+- full Dart2 support #6

@@ -37,7 +37,7 @@ class CliApp {
           '''
         versionCode: ${await versioner.revision}
         versionName: ${await versioner.versionName}
-        baseBranch: ${versioner.config.baseBranch}
+        baseBranch: ${await versioner.baseBranch}
         currentBranch: ${await versioner.headBranchName}
         sha1: ${await versioner.sha1}
         sha1Short: ${(await versioner.sha1)?.substring(0, 7)}
@@ -71,8 +71,7 @@ class CliApp {
       'baseBranch',
       abbr: 'b',
       help:
-          'The base branch where most of the development happens. Often what is set as baseBranch in github. Only on the baseBranch the revision can become only digits.',
-      defaultsTo: GitVersioner.defaultBranch,
+          'The base branch where most of the development happens, (defaults to master, or main). Often what is set as baseBranch in github. Only on the baseBranch the revision can become only digits.',
     )
     ..addOption(
       'yearFactor',
@@ -111,7 +110,7 @@ class CliApp {
     parsedCliArgs.showVersion = argResults['version'] as bool;
     parsedCliArgs.fullOutput = argResults['full'] as bool;
     parsedCliArgs.repoPath = argResults['context'] as String?;
-    parsedCliArgs.baseBranch = argResults['baseBranch'] as String;
+    parsedCliArgs.baseBranch = argResults['baseBranch'] as String?;
     parsedCliArgs.yearFactor = intArg(argResults, 'yearFactor');
     parsedCliArgs.stopDebounce = intArg(argResults, 'stopDebounce');
     if (argResults.rest.length == 1) {
@@ -171,7 +170,7 @@ class GitRevisionCliArgs {
   String? repoPath;
   String revision = 'HEAD';
   String? name;
-  String baseBranch = GitVersioner.defaultBranch;
+  String? baseBranch;
   int yearFactor = GitVersioner.defaultYearFactor;
   int stopDebounce = GitVersioner.defaultStopDebounce;
 

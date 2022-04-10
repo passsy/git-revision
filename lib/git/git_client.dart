@@ -78,7 +78,7 @@ class GitClient {
   /// `git branch --all --list "*$rev"`
   Stream<String> branchLocalOrRemote(String branchName) async* {
     final String? text = await _git("branch --all --list *$branchName", emptyResultIsError: false);
-    if (text == null) {
+    if (text == null || text.isEmpty) {
       return;
     }
     final branches = text

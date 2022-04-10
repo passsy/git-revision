@@ -5,7 +5,6 @@ import 'package:git_revision/git/commit.dart';
 import 'package:git_revision/git/git_client.dart';
 import 'package:git_revision/git/local_changes.dart';
 import 'package:git_revision/git_revision.dart';
-import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
 import 'util/memory_logger.dart';
@@ -71,7 +70,7 @@ void main() {
     group('baseBranch', () {
       test('default', () async {
         final parsed = CliApp.parseCliArgs(['']);
-        expect(parsed.baseBranch, GitVersioner.defaultBranch);
+        expect(parsed.baseBranch, isNull);
       });
 
       test('set baseBranch', () async {
@@ -285,7 +284,6 @@ void main() {
   group('--full', () {
     MemoryLogger logger;
     CliApp app;
-    GitVersioner versioner;
     late String log;
 
     setUp(() async {
@@ -306,6 +304,7 @@ void main() {
           featureBranchTimeComponentField: 776,
           featureBranchOriginField: Commit('featureBranchOrigin', '0'),
           localChangesField: const LocalChanges(4, 5, 6),
+          baseBranchField: 'notmain',
         );
       });
       await app.process(['-y 100', 'HEAD', '--baseBranch', 'asdf', '--full']);
@@ -364,6 +363,10 @@ void main() {
       // detects new added fields which aren't mocked
       expect(log, isNot(contains('null')));
     });
+
+    test('baseBranch', () async {
+      expect(log, contains('baseBranch: notmain'));
+    });
   });
 }
 
@@ -392,6 +395,7 @@ class _FakeGitVersioner implements GitVersioner {
     this.revisionField,
     this.sha1Field,
     this.versionNameField,
+    this.baseBranchField,
   });
 
   final List<Commit>? allFirstBaseBranchCommitsField;
@@ -444,8 +448,13 @@ class _FakeGitVersioner implements GitVersioner {
   Future<String?> get sha1 async => sha1Field;
 
   String? versionNameField;
+
   @override
   Future<String> get versionName async => versionNameField!;
+
+  String? baseBranchField;
+  @override
+  Future<String> get baseBranch async => baseBranchField!;
 }
 
 List<Commit> _commits(int count) {

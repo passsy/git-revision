@@ -324,6 +324,153 @@ void main() {
     });
   });
 
+  group('main only', () {
+    late TempGit git;
+    setUp(() async {
+      git = await makeTempGit();
+    });
+
+    test('first commmit (main)', () async {
+      await git.run(
+        name: 'init commit',
+        script: sh(
+          """
+          git init
+          
+          # switch to main
+          git checkout -b main
+          
+          echo 'Hello World' > a.txt
+          git add a.txt
+          
+          ${commit("initial commit", initTime)}
+          """,
+        ),
+      );
+
+      final out = await git.revision(['--full']);
+
+      expect(out, contains('versionCode: 1\n'));
+      expect(out, contains('versionName: 1_b5f9bcd\n'));
+      expect(out, contains('baseBranch: main\n'));
+      expect(out, contains('currentBranch: main\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 1\n'));
+      expect(out, contains('baseBranchCommitCount: 1\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('baseBranchTimeComponent: 0\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchTimeComponent: 0\n'));
+      expect(out, contains('yearFactor: 1000'));
+    });
+
+    test('3 commits (main)', () async {
+      await git.run(
+        name: 'init with 3 commits',
+        script: sh(
+          """
+          git init
+          
+          # switch to main
+          git checkout -b main
+          
+          echo 'Hello World' > a.txt
+          git add a.txt
+          
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 4))}
+          
+          echo 'third commit' > a.txt
+          ${commit("third commit", initTime.add(day))}
+          """,
+        ),
+      );
+
+      final out = await git.revision(['--full']);
+
+      expect(out, contains('versionCode: 6\n'));
+      expect(out, contains('versionName: 6_f3aacda\n'));
+      expect(out, contains('baseBranch: main\n'));
+      expect(out, contains('currentBranch: main\n'));
+      expect(out, contains('completeFirstOnlyBaseBranchCommitCount: 3\n'));
+      expect(out, contains('baseBranchCommitCount: 3\n'));
+      expect(out, contains('baseBranchTimeComponent: 3\n'));
+      expect(out, contains('featureBranchCommitCount: 0\n'));
+      expect(out, contains('featureBranchTimeComponent: 0\n'));
+      expect(out, contains('yearFactor: 1000'));
+    });
+
+    test("merge branch with old commits doesn't increase the revision of previous commits (main)", () async {
+      await git.run(
+        name: 'init master branch',
+        script: sh(
+          """
+          git init
+          
+          # switch to main
+          git checkout -b main
+         
+          echo 'Hello World' > a.txt
+          git add a.txt
+          ${commit("initial commit", initTime)}
+          
+          echo 'second commit' > a.txt
+          ${commit("second commit", initTime.add(hour * 6))}
+          """,
+        ),
+      );
+
+      // get current revision, should not change afterwards
+      final out1 = await git.revision(['--full']);
+      expect(out1, contains('versionCode: 3'));
+
+      await git.run(
+        name: 'merge feature B',
+        script: sh(
+          """
+          # branch from initial commit
+          git checkout HEAD^1
+          git checkout -b 'featureB'
+          echo 'implement feature B' > b.txt
+          git add b.txt
+          # Date is before the last commit on main
+          ${commit("implement feature B", initTime.add(hour * 4))}
+          
+          git checkout featureB
+          echo 'fix bug' > b.txt
+          ${commit("fix bug", initTime.add(day))}
+          
+          git checkout main
+          ${merge("featureB", initTime.add(day * 2 + (hour * 1)))}
+          """,
+        ),
+      );
+
+      // revision obviously increased after merge
+      final out2 = await git.revision(['--full']);
+      expect(out2, contains('baseBranchTimeComponent: 6\n'));
+      expect(out2, contains('baseBranchCommitCount: 5\n'));
+      expect(out2, contains('versionCode: 11\n'));
+      expect(out2, contains('versionName: 11_99c52ee\n'));
+
+      await git.run(
+        name: 'go back to commit before merge',
+        script: sh(
+          """
+          git checkout main
+          git checkout HEAD^1
+          """,
+        ),
+      );
+
+      // same revision as before
+      final out3 = await git.revision(['--full']);
+      expect(out3, contains('versionCode: 3\n'));
+      expect(out3, contains('versionName: 3_51f6726\n'));
+    });
+  });
+
   group('feature branch', () {
     late TempGit git;
     setUp(() async {
@@ -505,7 +652,7 @@ void main() {
       );
 
       await git.run(
-        name: 'merge D into develop and release to mastser',
+        name: 'merge D into develop and release to master',
         script: sh(
           """
           git checkout develop

@@ -46,6 +46,7 @@ class TempGit {
       """
         # Script ${_scriptCount - 1} '$name'
         # Created at ${DateTime.now().toIso8601String()}
+        set -e
         $script
         """,
     );
@@ -114,13 +115,14 @@ void _throwOnError(io.ProcessResult processResult) {
     io.stderr.write("Exit code: ${processResult.exitCode}");
     io.stderr.write(processResult.stderr);
     throw io.ProcessException(
-        "",
-        [],
-        "out:\n"
-            "${processResult.stdout as String}\n"
-            "err:\n"
-            "${processResult.stderr as String}",
-        processResult.exitCode);
+      "",
+      [],
+      "out:\n"
+          "${processResult.stdout as String}\n"
+          "err:\n"
+          "${processResult.stderr as String}",
+      processResult.exitCode,
+    );
   }
 }
 
