@@ -1,6 +1,7 @@
 name: git_revision
 version: 0.7.0
-description: Revision calculator for git projects
+description: Git extension to generate a meaningful, human-readable revision for each commit in a git repository.
+repository: https://github.com/passsy/git-revision
 
 environment:
   sdk: '>=2.15.0 <3.0.0'
