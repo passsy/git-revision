@@ -1,6 +1,14 @@
 # git revision
 
-Git extension to generate a meaningful, human readable revision for each commit in a git repository. 
+Git extension to generate a meaningful, human-readable revision for each commit in a git repository. 
+
+## Installing
+
+```bash
+dart pub global activate git_revision
+```
+
+or download the archive from [releases](https://github.com/passsy/git-revision/releases) and install it manually
 
 ## Usage
 
@@ -64,15 +72,11 @@ git revision creates a useful revision for your project beyond 'git describe'
 -h, --help            Print this usage information.
 -v, --version         Shows the version information of git revision
 -C, --context         <path> Run as if git was started in <path> instead of the current working directory
--b, --baseBranch      The base branch where most of the development happens. Often what is set as baseBranch in github. Only on the baseBranch the revision can become only digits.
-                      (defaults to "master")
-
+-b, --baseBranch      The base branch where most of the development happens, (defaults to master, or main). Often what is set as baseBranch in github. Only on the baseBranch the revision can become only digits.
 -y, --yearFactor      revision increment count per year
                       (defaults to "1000")
-
 -d, --stopDebounce    time between two commits which are further apart than this stopDebounce (in hours) will not be included into the timeComponent. A project on hold for a few months will therefore not increase the revision drastically when development starts again.
                       (defaults to "48")
-
 -n, --name            a human readable name and identifier of a revision ('73_<name>+21_996321c'). Can be anything which gives the revision more meaning i.e. the number of the PullRequest when building on CI. Allowed characters: [a-zA-Z0-9_-/] any letter, digits, underscore, dash and slash. Invalid characters will be removed.
     --full            shows full information about the current revision and extracted information
 ```
