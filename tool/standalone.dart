@@ -28,7 +28,8 @@ Future<void> standalone() async {
   await Future.wait(
     platforms.expand((os) {
       return architectures.map((arch) {
-        return StandaloneBundler(os, arch, dartVersion.toString(), channel).bundle();
+        return StandaloneBundler(os, arch, dartVersion.toString(), channel)
+            .bundle();
       });
     }),
   );
@@ -45,7 +46,8 @@ class StandaloneBundler {
   Future bundle() async {
     final sdk = await _downloadDartSdk();
     if (sdk == null) {
-      print("There is no dart sdk available for variant Dart $dartVersion on $os-$architecture, skipping");
+      print(
+          "There is no dart sdk available for variant Dart $dartVersion on $os-$architecture, skipping");
       return;
     }
     print("bundling $os-$architecture");
@@ -82,32 +84,44 @@ class StandaloneBundler {
 
     // add dart executable
     if (os == 'windows') {
-      final dart = dartSdk.firstWhere((file) => file.name.endsWith("/bin/dart.exe")).content as List<int>;
-      archive.addFile(fileFromBytes("git-revision/src/dart.exe", dart, executable: true));
+      final dart = dartSdk
+          .firstWhere((file) => file.name.endsWith("/bin/dart.exe"))
+          .content as List<int>;
+      archive.addFile(
+          fileFromBytes("git-revision/src/dart.exe", dart, executable: true));
     } else {
-      final dart = dartSdk.firstWhere((file) => file.name.endsWith("/bin/dart")).content as List<int>;
-      archive.addFile(fileFromBytes("git-revision/src/dart", dart, executable: true));
+      final dart = dartSdk
+          .firstWhere((file) => file.name.endsWith("/bin/dart"))
+          .content as List<int>;
+      archive.addFile(
+          fileFromBytes("git-revision/src/dart", dart, executable: true));
     }
 
     // and the dart license
     archive.addFile(
       fileFromBytes(
         "git-revision/src/DART_LICENSE",
-        dartSdk.firstWhere((file) => file.name.endsWith("/LICENSE")).content as List<int>,
+        dartSdk.firstWhere((file) => file.name.endsWith("/LICENSE")).content
+            as List<int>,
       ),
     );
 
     // add snapshot
     // TODO: Use an app snapshots when https://github.com/dart-lang/sdk/issues/28617 is fixed.
-    archive.addFile(file("git-revision/src/git_revision.dart.snapshot", "build/git_revision.dart.snapshot"));
+    archive.addFile(file("git-revision/src/git_revision.dart.snapshot",
+        "build/git_revision.dart.snapshot"));
     // and the project license
     archive.addFile(file("git-revision/src/LICENSE", "LICENSE"));
 
     // add executable
     if (os == 'windows') {
-      archive.addFile(file("git-revision/git-revision.bat", "package/git-revision.bat", executable: true));
+      archive.addFile(file(
+          "git-revision/git-revision.bat", "package/git-revision.bat",
+          executable: true));
     } else {
-      archive.addFile(file("git-revision/git-revision", "package/git-revision.sh", executable: true));
+      archive.addFile(file(
+          "git-revision/git-revision", "package/git-revision.sh",
+          executable: true));
     }
 
     return archive;

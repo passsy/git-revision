@@ -30,10 +30,12 @@ Future<void> buildGeneratedSource() async {
   final version = yaml['version'] as String;
 
   final files = Directory("lib").listSync();
-  final sourceFile = files.firstWhere((it) => path.basename(it.path) == 'cli_app.dart');
+  final sourceFile =
+      files.firstWhere((it) => path.basename(it.path) == 'cli_app.dart');
   final partFile = File(sourceFile.path.replaceAll(".dart", ".g.dart"));
 
-  final source = DartFormatter().format('''
+  final source = DartFormatter().format(
+    '''
       // GENERATED CODE - DO NOT MODIFY BY HAND
 
       part of 'cli_app.dart';
@@ -43,7 +45,8 @@ Future<void> buildGeneratedSource() async {
       // **************************************************************************
 
       const String versionName = '$version';
-      ''',);
+      ''',
+  );
 
   await partFile.writeAsString(source);
 

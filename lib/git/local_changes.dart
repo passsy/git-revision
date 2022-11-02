@@ -31,5 +31,6 @@ class LocalChanges {
           deletions == other.deletions;
 
   @override
-  int get hashCode => filesChanged.hashCode ^ additions.hashCode ^ deletions.hashCode;
+  int get hashCode =>
+      filesChanged.hashCode ^ additions.hashCode ^ deletions.hashCode;
 }

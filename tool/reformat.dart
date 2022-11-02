@@ -4,9 +4,16 @@ import 'dart:io';
 Future<void> main(List<String> args) => reformat();
 
 Future<void> reformat() async {
-  final Process p =
-      await Process.start('dartfmt', ['--set-exit-if-changed', '--fix', '-l 120', '-w', 'bin', 'lib', 'test', 'tool'])
-          .then((process) {
+  final Process p = await Process.start('dartfmt', [
+    '--set-exit-if-changed',
+    '--fix',
+    '-l 120',
+    '-w',
+    'bin',
+    'lib',
+    'test',
+    'tool'
+  ]).then((process) {
     stdout.writeln('Reformatting project with dartfmt');
 
     final out = process.stdout
