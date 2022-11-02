@@ -1,5 +1,5 @@
 name: git_revision
-version: 0.7.1
+version: 0.7.2
 description: Git extension to generate a meaningful, human-readable revision for each commit in a git repository.
 repository: https://github.com/passsy/git-revision
 
