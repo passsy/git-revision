@@ -113,7 +113,7 @@ class StandaloneBundler {
     return archive;
   }
 
-  Future<File> _writeToDisk(final Archive archive) async {
+  Future<File> _writeToDisk(Archive archive) async {
     final version = await projectVersion();
     final prefix = 'build/git_revision-$version-$os-$architecture';
     late String output;

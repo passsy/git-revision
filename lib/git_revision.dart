@@ -35,16 +35,16 @@ class GitVersioner {
     final hash = (await gitClient.sha1(config.rev))?.substring(0, 7) ?? "0000000";
     final additionalCommits = await featureBranchCommits;
 
-    final _baseBranch = await baseBranch;
+    final baseBranch = await this.baseBranch;
     if (config.rev == 'HEAD') {
       final branch = await gitClient.headBranchName;
       final changes = await gitClient.localChanges(config.rev);
 
       String name = '';
-      if (branch != null && branch != _baseBranch) {
+      if (branch != null && branch != baseBranch) {
         name = "_$branch";
       }
-      if (config.name != null && config.name != _baseBranch) {
+      if (config.name != null && config.name != baseBranch) {
         name = "_${config.name}";
       }
       final furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
@@ -55,10 +55,10 @@ class GitVersioner {
       final furtherPart = additionalCommits.isNotEmpty ? "+${additionalCommits.length}" : '';
       String name = '';
 
-      if (!hash.startsWith(config.rev) && config.rev != _baseBranch) {
+      if (!hash.startsWith(config.rev) && config.rev != baseBranch) {
         name = "_${config.rev}";
       }
-      if (config.name != null && config.name != _baseBranch) {
+      if (config.name != null && config.name != baseBranch) {
         name = "_${config.name}";
       }
 
@@ -90,8 +90,8 @@ class GitVersioner {
   /// Most often a subset of [firstHeadBranchCommits]
   Future<List<Commit>> get allFirstBaseBranchCommits async {
     try {
-      final _baseBranch = await baseBranch;
-      final base = await gitClient.branchLocalOrRemote(_baseBranch).first;
+      final baseBranch = await this.baseBranch;
+      final base = await gitClient.branchLocalOrRemote(baseBranch).first;
       final commits = await gitClient.revList(base, firstParentOnly: true);
       return commits;
     } catch (ex) {
