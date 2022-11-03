@@ -222,7 +222,8 @@ void main() {
     test('shows intro text', () async {
       expect(
         output.messages.join(),
-        startsWith("git revision creates a useful revision for your project beyond 'git describe'"),
+        startsWith(
+            "git revision creates a useful revision for your project beyond 'git describe'"),
       );
     });
 
@@ -400,7 +401,8 @@ class _FakeGitVersioner implements GitVersioner {
 
   final List<Commit>? allFirstBaseBranchCommitsField;
   @override
-  Future<List<Commit>> get allFirstBaseBranchCommits async => allFirstBaseBranchCommitsField!;
+  Future<List<Commit>> get allFirstBaseBranchCommits async =>
+      allFirstBaseBranchCommitsField!;
 
   final List<Commit>? baseBranchCommitsField;
   @override
@@ -408,7 +410,8 @@ class _FakeGitVersioner implements GitVersioner {
 
   final int? baseBranchTimeComponentField;
   @override
-  Future<int> get baseBranchTimeComponent async => baseBranchTimeComponentField!;
+  Future<int> get baseBranchTimeComponent async =>
+      baseBranchTimeComponentField!;
   final List<Commit>? commitsField;
   @override
   Future<List<Commit>> get commits async => commitsField!;
@@ -418,7 +421,8 @@ class _FakeGitVersioner implements GitVersioner {
 
   List<Commit>? featureBranchCommitsField;
   @override
-  Future<List<Commit>> get featureBranchCommits async => featureBranchCommitsField!;
+  Future<List<Commit>> get featureBranchCommits async =>
+      featureBranchCommitsField!;
 
   Commit? featureBranchOriginField;
   @override
@@ -426,7 +430,8 @@ class _FakeGitVersioner implements GitVersioner {
 
   int? featureBranchTimeComponentField;
   @override
-  Future<int> get featureBranchTimeComponent async => featureBranchTimeComponentField!;
+  Future<int> get featureBranchTimeComponent async =>
+      featureBranchTimeComponentField!;
 
   @override
   GitClient get gitClient => throw UnimplementedError();

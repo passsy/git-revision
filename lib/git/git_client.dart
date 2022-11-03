@@ -13,7 +13,8 @@ class GitClient {
 
   String workingDir;
 
-  Future<List<Commit>> revList(String revision, {bool firstParentOnly = false}) async {
+  Future<List<Commit>> revList(String revision,
+      {bool firstParentOnly = false}) async {
     // use commit date not author date. commit date is  the one between the prev and next commit. Author date could be anything
     final String? result = await _git(
       'rev-list --pretty=%ct%n${firstParentOnly ? ' --first-parent' : ''} $revision',
@@ -36,7 +37,8 @@ class GitClient {
     assert(
       () {
         if (hash.isEmpty) throw ArgumentError("sha1 is empty ''");
-        if (hash.split('\n').length != 1) throw ArgumentError("sha1 is multiline '$hash'");
+        if (hash.split('\n').length != 1)
+          throw ArgumentError("sha1 is multiline '$hash'");
         return true;
       }(),
     );
@@ -46,7 +48,8 @@ class GitClient {
 
   /// branch name of `HEAD` or `null`
   Future<String?> get headBranchName async {
-    final name = await _git('symbolic-ref --short -q HEAD', emptyResultIsError: false);
+    final name =
+        await _git('symbolic-ref --short -q HEAD', emptyResultIsError: false);
     if (name == null) return null;
 
     // empty branch names can't exits this means no branch name
@@ -54,7 +57,8 @@ class GitClient {
 
     assert(
       () {
-        if (name.split('\n').length != 1) throw ArgumentError("branch name is multiline '$name'");
+        if (name.split('\n').length != 1)
+          throw ArgumentError("branch name is multiline '$name'");
         return true;
       }(),
     );
@@ -68,7 +72,8 @@ class GitClient {
       return LocalChanges.none;
     }
 
-    final changes = await _git('diff --shortstat HEAD', emptyResultIsError: false);
+    final changes =
+        await _git('diff --shortstat HEAD', emptyResultIsError: false);
     if (changes == null) return null;
     return _parseDiffShortStat(changes);
   }
@@ -77,7 +82,8 @@ class GitClient {
   ///
   /// `git branch --all --list "*$rev"`
   Stream<String> branchLocalOrRemote(String branchName) async* {
-    final String? text = await _git("branch --all --list *$branchName", emptyResultIsError: false);
+    final String? text = await _git("branch --all --list *$branchName",
+        emptyResultIsError: false);
     if (text == null || text.isEmpty) {
       return;
     }
@@ -95,7 +101,8 @@ class GitClient {
   Future<String?> _git(String args, {bool emptyResultIsError = true}) async {
     final argList = args.split(' ');
 
-    final processResult = await Process.run('git', argList, workingDirectory: workingDir);
+    final processResult =
+        await Process.run('git', argList, workingDirectory: workingDir);
     if (processResult.exitCode != 0) {
       return null;
     }
@@ -154,20 +161,25 @@ class _GitClientCache extends GitClient with FutureCacheMixin {
       cache(() => super.localChanges(revision), 'localChanges($revision)');
 
   @override
-  Future<String?> get headBranchName => cache(() => super.headBranchName, 'headBranchName');
+  Future<String?> get headBranchName =>
+      cache(() => super.headBranchName, 'headBranchName');
 
   @override
-  Future<String?> sha1(String revision) => cache(() => super.sha1(revision), 'sha1($revision)');
+  Future<String?> sha1(String revision) =>
+      cache(() => super.sha1(revision), 'sha1($revision)');
 
   @override
-  Future<List<Commit>> revList(String revision, {bool firstParentOnly = false}) {
+  Future<List<Commit>> revList(String revision,
+      {bool firstParentOnly = false}) {
     final name = 'revList($revision, firstParentOnly=$firstParentOnly)';
-    return cache(() => super.revList(revision, firstParentOnly: firstParentOnly), name);
+    return cache(
+        () => super.revList(revision, firstParentOnly: firstParentOnly), name);
   }
 
   @override
   Future<String?> _git(String args, {bool emptyResultIsError = true}) {
     final name = 'git $args -- $emptyResultIsError';
-    return cache(() => super._git(args, emptyResultIsError: emptyResultIsError), name);
+    return cache(
+        () => super._git(args, emptyResultIsError: emptyResultIsError), name);
   }
 }

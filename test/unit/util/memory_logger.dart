@@ -21,7 +21,9 @@ class MemoryLogger extends CliLogger {
           const IterableEquality().equals(errors, other.errors);
 
   @override
-  int get hashCode => const IterableEquality().hash(messages) ^ const IterableEquality().hash(errors);
+  int get hashCode =>
+      const IterableEquality().hash(messages) ^
+      const IterableEquality().hash(errors);
 
   @override
   String toString() {

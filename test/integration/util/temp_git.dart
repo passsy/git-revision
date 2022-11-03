@@ -26,7 +26,8 @@ class TempGit {
   int _scriptCount = 0;
 
   Future<void> setup() async {
-    root = await io.Directory.systemTemp.createTemp('git-revision-integration-test');
+    root = await io.Directory.systemTemp
+        .createTemp('git-revision-integration-test');
     final path = "${root.path}${io.Platform.pathSeparator}repo";
     repo = await io.Directory(path).create();
   }
@@ -36,7 +37,8 @@ class TempGit {
     await root.delete(recursive: true);
   }
 
-  Future<void> run({String? name, required String script, io.Directory? repo}) async {
+  Future<void> run(
+      {String? name, required String script, io.Directory? repo}) async {
     assert(script.isNotEmpty);
     final namePostfix = name != null ? "_$name".replaceAll(" ", "_") : "";
     final scriptName = "script${_scriptCount++}$namePostfix.sh";
@@ -53,13 +55,15 @@ class TempGit {
     await scriptFile.writeAsString(scriptText);
 
     // execute script
-    final permission = await io.Process.run('chmod', ['+x', scriptName], workingDirectory: root.path);
+    final permission = await io.Process.run('chmod', ['+x', scriptName],
+        workingDirectory: root.path);
     _throwOnError(permission);
 
     repo ??= this.repo;
     printOnFailure("\nrunning '$scriptName' in ${repo.path}:");
     printOnFailure("\n$scriptText\n\n");
-    final scriptResult = await io.Process.run('../$scriptName', [], workingDirectory: repo.path, runInShell: true);
+    final scriptResult = await io.Process.run('../$scriptName', [],
+        workingDirectory: repo.path, runInShell: true);
     _throwOnError(scriptResult);
   }
 
@@ -127,4 +131,5 @@ void _throwOnError(io.ProcessResult processResult) {
 }
 
 /// trims the script
-String sh(String script) => script.split('\n').map((line) => line.trimLeft()).join('\n').trim();
+String sh(String script) =>
+    script.split('\n').map((line) => line.trimLeft()).join('\n').trim();

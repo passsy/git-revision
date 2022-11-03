@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2
+
+- Format code
+- Improve pub page
+- Update GitHub links
+
 ## 0.7.1
 
 - Fix build number

@@ -14,7 +14,8 @@ class CliApp {
 
   CliApp(this.logger, this.versionerProvider);
 
-  CliApp.production([CliLogger logger = const CliLogger()]) : this(logger, (config) => GitVersioner(config));
+  CliApp.production([CliLogger logger = const CliLogger()])
+      : this(logger, (config) => GitVersioner(config));
 
   Future<void> process(List<String> args) async {
     final cliArgs = parseCliArgs(args);
@@ -60,12 +61,17 @@ class CliApp {
   }
 
   static final _cliArgParser = ArgParser()
-    ..addFlag('help', abbr: 'h', negatable: false, help: 'Print this usage information.')
-    ..addFlag('version', abbr: 'v', help: 'Shows the version information of git revision', negatable: false)
+    ..addFlag('help',
+        abbr: 'h', negatable: false, help: 'Print this usage information.')
+    ..addFlag('version',
+        abbr: 'v',
+        help: 'Shows the version information of git revision',
+        negatable: false)
     ..addOption(
       'context',
       abbr: 'C',
-      help: '<path> Run as if git was started in <path> instead of the current working directory',
+      help:
+          '<path> Run as if git was started in <path> instead of the current working directory',
     )
     ..addOption(
       'baseBranch',
@@ -91,13 +97,15 @@ class CliApp {
     ..addOption(
       'name',
       abbr: 'n',
-      help: "a human readable name and identifier of a revision ('73_<name>+21_996321c'). "
+      help:
+          "a human readable name and identifier of a revision ('73_<name>+21_996321c'). "
           "Can be anything which gives the revision more meaning i.e. the number of the PullRequest when building on CI. "
           "Allowed characters: [a-zA-Z0-9_-/] any letter, digits, underscore, dash and slash. Invalid characters will be removed.",
     )
     ..addFlag(
       'full',
-      help: 'shows full information about the current revision and extracted information',
+      help:
+          'shows full information about the current revision and extracted information',
       negatable: false,
     );
 
@@ -119,12 +127,14 @@ class CliApp {
         parsedCliArgs.revision = rest;
       }
     } else if (argResults.rest.length > 1) {
-      throw ArgError('expected only one revision argument, found ${argResults.rest.length}: ${argResults.rest}');
+      throw ArgError(
+          'expected only one revision argument, found ${argResults.rest.length}: ${argResults.rest}');
     }
 
     final String? rawName = argResults['name'] as String?;
     if (rawName != null) {
-      String safeName = rawName.replaceAll(RegExp(r'[^\w_\-\/]+'), '_').replaceAll('__', '_');
+      String safeName =
+          rawName.replaceAll(RegExp(r'[^\w_\-\/]+'), '_').replaceAll('__', '_');
 
       // trim underscore at start and end
       if (safeName[0] == '_') {
@@ -152,7 +162,8 @@ class CliApp {
   }
 
   void showUsage() {
-    logger.stdOut("git revision creates a useful revision for your project beyond 'git describe'");
+    logger.stdOut(
+        "git revision creates a useful revision for your project beyond 'git describe'");
     logger.stdOut(_cliArgParser.usage);
   }
 
@@ -161,7 +172,8 @@ class CliApp {
   }
 }
 
-String trimLines(String text) => text.split('\n').map((line) => line.trimLeft()).join('\n').trim();
+String trimLines(String text) =>
+    text.split('\n').map((line) => line.trimLeft()).join('\n').trim();
 
 class GitRevisionCliArgs {
   bool showHelp = false;
@@ -180,7 +192,8 @@ class GitRevisionCliArgs {
   String toString() =>
       'GitRevisionCliArgs{helpFlag: $showHelp, versionFlag: $showVersion, baseBranch: $baseBranch, repoPath: $repoPath, yearFactor: $yearFactor, stopDebounce: $stopDebounce}';
 
-  GitVersionerConfig toConfig() => GitVersionerConfig(baseBranch, repoPath, yearFactor, stopDebounce, name, revision);
+  GitVersionerConfig toConfig() => GitVersionerConfig(
+      baseBranch, repoPath, yearFactor, stopDebounce, name, revision);
 
   @override
   bool operator ==(Object other) =>

@@ -258,7 +258,9 @@ void main() {
       expect(out, contains('yearFactor: 1000'));
     });
 
-    test("merge branch with old commits doesn't increase the revision of previous commits", () async {
+    test(
+        "merge branch with old commits doesn't increase the revision of previous commits",
+        () async {
       await git.run(
         name: 'init master branch',
         script: sh(
@@ -401,7 +403,9 @@ void main() {
       expect(out, contains('yearFactor: 1000'));
     });
 
-    test("merge branch with old commits doesn't increase the revision of previous commits (main)", () async {
+    test(
+        "merge branch with old commits doesn't increase the revision of previous commits (main)",
+        () async {
       await git.run(
         name: 'init master branch',
         script: sh(
@@ -569,7 +573,9 @@ void main() {
       expect(out2, contains('versionName: 3_featureB+2_331b280\n'));
     });
 
-    test("git flow - baseBranch=develop - merge develop -> master increases revision", () async {
+    test(
+        "git flow - baseBranch=develop - merge develop -> master increases revision",
+        () async {
       await git.run(
         name: 'init master branch - create develop',
         script: sh(
@@ -678,7 +684,9 @@ void main() {
     });
 
     test("master only on remote", () async {
-      final repo2 = await io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      final repo2 = await io.Directory(
+              "${git.root.path}${io.Platform.pathSeparator}remoteRepo")
+          .create();
       await git.run(
         name: 'init master branch',
         repo: repo2,
@@ -716,7 +724,8 @@ void main() {
       expect(out, contains('versionName: 2_featureB+2_d3e1844\n'));
 
       // now master branch is only available on remote
-      await git.run(name: 'delete master branch', script: "git branch -d master");
+      await git.run(
+          name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       final out2 = await git.revision(['--full']);
@@ -724,7 +733,9 @@ void main() {
     });
 
     test("master only on remote which is not called origin", () async {
-      final repo2 = await io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      final repo2 = await io.Directory(
+              "${git.root.path}${io.Platform.pathSeparator}remoteRepo")
+          .create();
       await git.run(
         name: 'init master branch',
         repo: repo2,
@@ -761,7 +772,8 @@ void main() {
       expect(out, contains('versionName: 2_featureB+2_d3e1844\n'));
 
       // now master branch is only available on remote
-      await git.run(name: 'delete master branch', script: "git branch -d master");
+      await git.run(
+          name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       final out2 = await git.revision(['--full']);
@@ -769,7 +781,9 @@ void main() {
     });
 
     test("master only on one remote - multiple remotes", () async {
-      final repo2 = await io.Directory("${git.root.path}${io.Platform.pathSeparator}remoteRepo").create();
+      final repo2 = await io.Directory(
+              "${git.root.path}${io.Platform.pathSeparator}remoteRepo")
+          .create();
       await git.run(
         name: 'init master branch',
         repo: repo2,
@@ -810,7 +824,8 @@ void main() {
       expect(out, contains('versionName: 2_featureB+1_9006da1'));
 
       // now master branch is only available on remote
-      await git.run(name: 'delete master branch', script: "git branch -d master");
+      await git.run(
+          name: 'delete master branch', script: "git branch -d master");
 
       // output is unchanged
       final out2 = await git.revision(['--full']);
